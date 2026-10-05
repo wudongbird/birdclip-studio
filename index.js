@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.2.0';
+  const VERSION = '2.2.1';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -327,7 +327,15 @@
     });
     const current = allTemplates().find(t => t.id === work.templateId); $id('bc-delete-template').hidden = !current || current.builtin;
   }
-  async function useTemplate(id) { const template = allTemplates().find(t => t.id === id); if (!template) return; await hydrateTemplateFonts(template); work = defaultWork(template); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); }
+  function editedContent() {
+    const values = {}; const defaults = work?.template?.defaultContent || {};
+    Object.entries(work?.values || {}).forEach(([key, value]) => { if (String(value ?? '') !== String(defaults[key] ?? '')) values[key] = value; });
+    return values;
+  }
+  async function useTemplate(id) {
+    const template = allTemplates().find(t => t.id === id); if (!template) return; const preserved = editedContent();
+    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; refreshAll();
+  }
   function renderContentFields() {
     const box = $id('bc-content-fields'); box.innerHTML = ''; const binds = [...new Set(currentTextLayers().map(layer => layer.bind))];
     binds.forEach(bind => {
@@ -401,8 +409,9 @@
     const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll();
   }
   function newBlankTemplate() {
+    const preserved = editedContent();
     const t = normalizeTemplate({ format: FORMAT, schemaVersion: 1, id: `draft-${Date.now()}`, name: '空白模板', canvas: { width: 720, height: 1280 }, background: { color1: '#f4f0e8', color2: '#ffffff', angle: 135, image: '', dim: 0, grain: 5 }, defaultContent: { title: '标题', subtitle: '', body: '在这里输入正文。', author: '', source: '', watermark: '', extra: '' }, layers: [{ id: 'title', type: 'text', bind: 'title', x: .1, y: .12, w: .8, size: 58, font: 'serif', color: '#282522', align: 'center', lineHeight: 1.2, letterSpacing: 5, opacity: 1, rotate: 0 }, { id: 'body', type: 'text', bind: 'body', x: .14, y: .34, w: .72, size: 30, font: 'serif', color: '#3f3a35', align: 'left', lineHeight: 1.8, letterSpacing: 1, opacity: 1, rotate: 0 }] }, false);
-    work = defaultWork(t); selectedLayerId = 'title'; refreshAll();
+    work = defaultWork(t); work.values = { ...work.values, ...preserved }; selectedLayerId = 'body'; refreshAll();
   }
   function addTextLayer() {
     const used = new Set(currentTextLayers().map(l => l.bind)); const bind = ['title', 'subtitle', 'body', 'author', 'source', 'watermark', 'extra'].find(x => !used.has(x)) || 'extra'; const layer = normalizeLayer({ id: `text-${Date.now().toString(36)}`, type: 'text', bind, x: .15, y: .18, w: .7, size: 34, font: 'serif', color: '#333333', align: 'center', lineHeight: 1.5, letterSpacing: 1, opacity: 1, rotate: 0 }, work.template.layers.length);
