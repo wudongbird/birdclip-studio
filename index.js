@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.5.0';
+  const VERSION = '0.01';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -69,7 +69,7 @@
         { id: 'title', type: 'text', bind: 'title', x: .09, y: .15, w: .82, size: 76, font: 'serif', color: '#eeeae3', align: 'center', lineHeight: 1.15, letterSpacing: 8, weight: 400, opacity: 1, rotate: 0, shadow: { enabled: true, color: '#000000', blur: 18, x: 0, y: 8 } },
         { id: 'rule', type: 'line', x1: .09, y1: .34, x2: .91, y2: .34, color: '#b86d62', width: 2, opacity: .5 },
         { id: 'mark', type: 'text', bind: 'watermark', x: .09, y: .375, w: .82, size: 14, font: 'sans', color: '#b8b5b0', align: 'left', lineHeight: 1.2, letterSpacing: 2, opacity: .55, rotate: 0 },
-        { id: 'body', type: 'text', bind: 'body', x: .11, y: .45, w: .78, size: 31, font: 'serif', color: '#ece8e1', align: 'left', lineHeight: 1.9, letterSpacing: 2, opacity: .96, rotate: 0 },
+        { id: 'body', type: 'text', bind: 'body', x: .11, y: .45, w: .78, h: .40, size: 31, font: 'serif', color: '#ece8e1', align: 'left', lineHeight: 1.9, letterSpacing: 2, opacity: .96, rotate: 0 },
         { id: 'footer', type: 'text', bind: 'author', x: .56, y: .9, w: .34, size: 19, font: 'serif', color: '#b8b5b0', align: 'right', lineHeight: 1.2, letterSpacing: 2, opacity: .7, rotate: 0 },
       ],
     },
@@ -84,7 +84,7 @@
         { id: 'headrule', type: 'line', x1: .13, y1: .12, x2: .87, y2: .12, color: '#7d756c', width: 1.4, opacity: .55 },
         { id: 'mark', type: 'text', bind: 'watermark', x: .035, y: .12, w: .07, size: 13, font: 'serif', color: '#8d847a', align: 'center', lineHeight: 1.5, letterSpacing: 2, opacity: .55, rotate: 90 },
         { id: 'quoteMark', type: 'text', text: '“', x: .13, y: .18, w: .12, size: 76, font: 'serif', color: '#b45f4d', align: 'left', lineHeight: 1, letterSpacing: 0, opacity: 1, rotate: 0 },
-        { id: 'body', type: 'text', bind: 'body', x: .18, y: .24, w: .66, size: 27, font: 'serif', color: '#4a4640', align: 'left', lineHeight: 1.85, letterSpacing: 1, opacity: .98, rotate: 0 },
+        { id: 'body', type: 'text', bind: 'body', x: .18, y: .24, w: .66, h: .62, size: 27, font: 'serif', color: '#4a4640', align: 'left', lineHeight: 1.85, letterSpacing: 1, opacity: .98, rotate: 0 },
         { id: 'footer', type: 'text', bind: 'author', x: .16, y: .92, w: .68, size: 17, font: 'serif', color: '#857d74', align: 'left', lineHeight: 1.2, letterSpacing: 2, opacity: .8, rotate: 0 },
       ],
     },
@@ -95,7 +95,7 @@
       defaultContent: { title: '蓝调留白', subtitle: 'A MOMENT IN BLUE', body: '将一段文字放在留白中央，\n让阅读慢下来。', author: '', source: '', watermark: '', extra: '' },
       layers: [
         { id: 'title', type: 'text', bind: 'title', x: .12, y: .23, w: .76, size: 55, font: 'serif', color: '#eef2f2', align: 'center', lineHeight: 1.2, letterSpacing: 6, opacity: 1, rotate: 0, shadow: { enabled: true, color: '#7ba9b7', blur: 14, x: 0, y: 0 } },
-        { id: 'body', type: 'text', bind: 'body', x: .16, y: .37, w: .68, size: 31, font: 'serif', color: '#e8eeee', align: 'center', lineHeight: 1.75, letterSpacing: 2, opacity: .94, rotate: 0 },
+        { id: 'body', type: 'text', bind: 'body', x: .16, y: .37, w: .68, h: .31, size: 31, font: 'serif', color: '#e8eeee', align: 'center', lineHeight: 1.75, letterSpacing: 2, opacity: .94, rotate: 0 },
         { id: 'sub', type: 'text', bind: 'subtitle', x: .18, y: .75, w: .64, size: 15, font: 'latin', color: '#9ebac3', align: 'center', lineHeight: 1.2, letterSpacing: 4, opacity: .62, rotate: 0 },
       ],
     },
@@ -260,7 +260,7 @@
     const x = { ...layer, id: String(layer.id || `layer-${index}`), type: allowed.includes(layer.type) ? layer.type : 'text' };
     if (x.type === 'text') {
       Object.assign(x, { x: .1, y: .1, w: .8, size: 32, font: 'serif', color: '#222222', align: 'left', lineHeight: 1.6, letterSpacing: 0, opacity: 1, rotate: 0, weight: 400, italic: false }, layer);
-      x.x = clamp(x.x, -.5, 1.5); x.y = clamp(x.y, -.5, 1.5); x.w = clamp(x.w, .05, 1.5); x.size = clamp(x.size, 8, 320); x.opacity = clamp(x.opacity, 0, 1); x.rotate = clamp(x.rotate, -180, 180);
+      x.x = clamp(x.x, -.5, 1.5); x.y = clamp(x.y, -.5, 1.5); x.w = clamp(x.w, .05, 1.5); if (x.h != null) x.h = clamp(x.h, .03, 1.5); x.size = clamp(x.size, 8, 320); x.opacity = clamp(x.opacity, 0, 1); x.rotate = clamp(x.rotate, -180, 180);
     } else if (x.type === 'image') {
       Object.assign(x, { name: `图片 ${index + 1}`, x: .1, y: .1, w: .8, h: .3, src: '', fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8d5cf', '#eeece7'] }, layer);
       x.name = String(x.name || `图片 ${index + 1}`).slice(0, 40); x.src = String(x.src || ''); x.fit = x.fit === 'contain' ? 'contain' : 'cover'; x.x = clamp(x.x, -.5, 1.5); x.y = clamp(x.y, -.5, 1.5); x.w = clamp(x.w, .03, 1.5); x.h = clamp(x.h, .03, 1.5); x.positionX = clamp(x.positionX ?? .5, 0, 1); x.positionY = clamp(x.positionY ?? .5, 0, 1); x.opacity = clamp(x.opacity ?? 1, 0, 1); x.radius = clamp(x.radius || 0, 0, 200);
@@ -491,7 +491,7 @@
   }
   function newBlankTemplate() {
     const preserved = editedContent();
-    const t = normalizeTemplate({ format: FORMAT, schemaVersion: 1, id: `draft-${Date.now()}`, name: '空白模板', canvas: { width: 720, height: 1280 }, background: { color1: '#f4f0e8', color2: '#ffffff', angle: 135, image: '', dim: 0, grain: 5 }, defaultContent: { title: '标题', subtitle: '', body: '在这里输入正文。', author: '', source: '', watermark: '', extra: '' }, layers: [{ id: 'title', type: 'text', bind: 'title', x: .1, y: .12, w: .8, size: 58, font: 'serif', color: '#282522', align: 'center', lineHeight: 1.2, letterSpacing: 5, opacity: 1, rotate: 0 }, { id: 'body', type: 'text', bind: 'body', x: .14, y: .34, w: .72, size: 30, font: 'serif', color: '#3f3a35', align: 'left', lineHeight: 1.8, letterSpacing: 1, opacity: 1, rotate: 0 }] }, false);
+    const t = normalizeTemplate({ format: FORMAT, schemaVersion: 1, id: `draft-${Date.now()}`, name: '空白模板', canvas: { width: 720, height: 1280 }, background: { color1: '#f4f0e8', color2: '#ffffff', angle: 135, image: '', dim: 0, grain: 5 }, defaultContent: { title: '标题', subtitle: '', body: '在这里输入正文。', author: '', source: '', watermark: '', extra: '' }, layers: [{ id: 'title', type: 'text', bind: 'title', x: .1, y: .12, w: .8, size: 58, font: 'serif', color: '#282522', align: 'center', lineHeight: 1.2, letterSpacing: 5, opacity: 1, rotate: 0 }, { id: 'body', type: 'text', bind: 'body', x: .14, y: .34, w: .72, h: .58, size: 30, font: 'serif', color: '#3f3a35', align: 'left', lineHeight: 1.8, letterSpacing: 1, opacity: 1, rotate: 0 }] }, false);
     work = defaultWork(t); work.values = { ...work.values, ...preserved }; selectedLayerId = 'body'; selectedImageId = ''; selectedCanvasType = 'text'; refreshAll();
   }
   function addTextLayer() {
@@ -600,10 +600,13 @@
   }
   function drawTextLayer(ctx, layer, values, W, H, bounds, template) {
     const text = String(layer.bind ? values[layer.bind] ?? '' : layer.text ?? ''); if (!text) return;
-    const x = layer.x * W, y = layer.y * H, width = layer.w * W; const scale = W / 720; const size = layer.size * scale; const lineHeight = size * Number(layer.lineHeight || 1.5); const spacing = Number(layer.letterSpacing || 0) * scale; const fontAsset = (template.fonts || []).find(font => font.id === layer.fontAssetId); const legacyCustom = String(layer.customFont || '').replace(/["\\]/g, '').trim(); const font = fontAsset ? `"${fontFamily(fontAsset.id)}",${FONT[layer.font] || FONT.serif}` : (legacyCustom ? `"${legacyCustom}",${FONT[layer.font] || FONT.serif}` : (FONT[layer.font] || FONT.serif));
-    ctx.save(); ctx.translate(x + width / 2, y); ctx.rotate(Number(layer.rotate || 0) * Math.PI / 180); ctx.translate(-(x + width / 2), -y); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); ctx.font = `${layer.italic ? 'italic ' : ''}${Number(layer.weight || 400)} ${size}px ${font}`; ctx.textBaseline = 'top';
+    const x = layer.x * W, y = layer.y * H, width = layer.w * W; const scale = W / 720; let size = layer.size * scale; const minSize = Math.min(size, 8 * scale); const spacing = Number(layer.letterSpacing || 0) * scale; const lineRatio = Number(layer.lineHeight || 1.5); const availableHeight = layer.h != null ? Math.max(1, Number(layer.h) * H) : Math.max(size * lineRatio, H - Math.max(0, y) - H * .05); const fontAsset = (template.fonts || []).find(font => font.id === layer.fontAssetId); const legacyCustom = String(layer.customFont || '').replace(/["\\]/g, '').trim(); const font = fontAsset ? `"${fontFamily(fontAsset.id)}",${FONT[layer.font] || FONT.serif}` : (legacyCustom ? `"${legacyCustom}",${FONT[layer.font] || FONT.serif}` : (FONT[layer.font] || FONT.serif));
+    const setFont = () => { ctx.font = `${layer.italic ? 'italic ' : ''}${Number(layer.weight || 400)} ${size}px ${font}`; };
+    ctx.save(); ctx.translate(x + width / 2, y); ctx.rotate(Number(layer.rotate || 0) * Math.PI / 180); ctx.translate(-(x + width / 2), -y); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); setFont(); ctx.textBaseline = 'top';
     if (layer.shadow?.enabled) { ctx.shadowColor = layer.shadow.color || '#000000'; ctx.shadowBlur = Number(layer.shadow.blur || 12) * scale; ctx.shadowOffsetX = Number(layer.shadow.x || 0) * scale; ctx.shadowOffsetY = Number(layer.shadow.y || 4) * scale; }
-    const lines = wrapText(ctx, text, width, spacing); let py = y;
+    let lineHeight = size * lineRatio; let lines = wrapText(ctx, text, width, spacing);
+    for (let attempt = 0; attempt < 20 && lines.length * lineHeight > availableHeight && size > minSize; attempt++) { const ratio = Math.sqrt(availableHeight / Math.max(1, lines.length * lineHeight)); size = Math.max(minSize, size * Math.min(.94, Math.max(.72, ratio))); lineHeight = size * lineRatio; setFont(); lines = wrapText(ctx, text, width, spacing); }
+    let py = y;
     lines.forEach(line => { const lineWidth = measureSpaced(ctx, line, spacing); let px = x; if (layer.align === 'center') px += (width - lineWidth) / 2; else if (layer.align === 'right') px += width - lineWidth; drawSpaced(ctx, line, px, py, spacing, layer); py += lineHeight; });
     ctx.restore(); bounds.push({ id: layer.id, type: 'text', x, y, w: width, h: Math.max(lineHeight, lines.length * lineHeight) });
   }
