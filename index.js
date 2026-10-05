@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.0.0';
+  const VERSION = '2.1.0';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -23,10 +23,28 @@
 
   const FONT = {
     serif: '"Noto Serif SC","Source Han Serif SC","Songti SC","STSong",serif',
+    song: '"Songti SC","STSong","SimSun","Noto Serif SC",serif',
+    sourceSerif: '"Source Han Serif SC","Noto Serif SC","Songti SC",serif',
+    fangSong: '"FangSong","STFangsong","FangSong_GB2312","Noto Serif SC",serif',
+    kai: '"KaiTi","STKaiti","Kaiti SC","Noto Serif SC",serif',
     sans: '"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif',
-    kai: 'KaiTi,"STKaiti","Kaiti SC",serif',
+    rounded: '"Yuanti SC","STYuanti","Hiragino Maru Gothic ProN","PingFang SC",sans-serif',
+    mono: '"Sarasa Mono SC","Noto Sans Mono CJK SC","SFMono-Regular","Courier New",monospace',
     latin: 'Georgia,"Times New Roman",serif',
   };
+  const TEXT_COLORS = ['#1f2329', '#ece8df', '#6f6259', '#8a4f55', '#9a654f', '#6b715f', '#3f6259', '#537080', '#46516b', '#756d7d', '#b9aea0', '#f6f1e8'];
+  const BACKGROUND_PRESETS = [
+    { name: '墨夜', colors: ['#0b1018', '#171b25'] },
+    { name: '暖纸', colors: ['#eee6d8', '#fbf8f0'] },
+    { name: '雾灰', colors: ['#cbc8c2', '#efede8'] },
+    { name: '茶褐', colors: ['#302824', '#665046'] },
+    { name: '松石', colors: ['#172a27', '#405b53'] },
+    { name: '靛蓝', colors: ['#142130', '#34495d'] },
+    { name: '酒渍', colors: ['#2b1c22', '#66404a'] },
+    { name: '莓灰', colors: ['#d9cfd1', '#f3eeeb'] },
+    { name: '冷雾', colors: ['#b9c4c8', '#e9edef'] },
+    { name: '苔纸', colors: ['#a8aa96', '#e8e4d5'] },
+  ];
   const FIELD_LABELS = {
     title: '标题', subtitle: '副标题', body: '正文', author: '署名', source: '出处', watermark: '栏目小字 / 水印', extra: '附加文字',
   };
@@ -83,6 +101,7 @@
   let saveTimer = 0;
   let layerBounds = [];
   let dragState = null;
+  let cachedSelection = '';
   const imageCache = new Map();
 
   function toast(message, type = 'info') {
@@ -91,6 +110,25 @@
   function popupApi() {
     try { const ctx = mainWin.SillyTavern?.getContext?.(); if (ctx?.Popup && ctx?.POPUP_TYPE) return ctx; } catch (e) {}
     return null;
+  }
+  function captureSelection() {
+    try {
+      const selection = mainWin.getSelection?.(); const text = String(selection?.toString?.() || '').trim();
+      const node = selection?.anchorNode; const element = node?.nodeType === 1 ? node : node?.parentElement;
+      if (text && !element?.closest?.('#bc-panel')) cachedSelection = text.slice(0, 12000);
+    } catch (e) {}
+  }
+  function chatEntries() {
+    try {
+      const chat = mainWin.SillyTavern?.getContext?.()?.chat;
+      if (!Array.isArray(chat)) return [];
+      return chat.map((message, index) => ({ ...message, index, text: cleanExcerpt(message?.mes) })).filter(item => item.text);
+    } catch (e) { return []; }
+  }
+  function cleanExcerpt(value) {
+    let text = String(value ?? '');
+    if (/<[a-z][\s\S]*>/i.test(text)) { const box = mainDoc.createElement('div'); box.innerHTML = text.replace(/<br\s*\/?>/gi, '\n'); text = box.textContent || ''; }
+    return text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   }
   function allTemplates() { return [...BUILTINS, ...customTemplates]; }
   function currentTextLayers() { return (work?.template?.layers || []).filter(layer => layer.type === 'text' && layer.bind); }
@@ -172,9 +210,10 @@
         </section>
         <section class="bc-controls">
           <div class="bc-card"><div class="bc-cardhead"><h3>模板库</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></div>
+          <div class="bc-card"><div class="bc-cardhead"><h3>快捷摘录</h3><span id="bc-clip-status"></span></div><p class="bc-muted bc-clip-help">不离开聊天页，直接把内容放进正文。</p><div class="bc-button-grid bc-clip-actions"><button class="bc-btn" id="bc-use-selection">选中文字</button><button class="bc-btn" id="bc-use-last-ai">最近回复</button><button class="bc-btn" id="bc-use-last-user">最近发言</button><button class="bc-btn" id="bc-use-clipboard">粘贴剪贴板</button></div><div class="bc-pick-row"><select id="bc-chat-pick" aria-label="最近聊天"></select><button class="bc-btn" id="bc-use-picked">摘录这条</button></div></div>
           <div class="bc-card"><h3>作品文字</h3><div id="bc-content-fields"></div></div>
-          <details class="bc-card" open><summary>文字层与布局</summary><label>当前文字层</label><select id="bc-layer-select"></select><div id="bc-layer-editor"><div class="bc-grid2"><div><label>字体</label><select id="bc-l-font"><option value="serif">宋体 / 衬线</option><option value="sans">黑体 / 无衬线</option><option value="kai">楷体</option><option value="latin">西文衬线</option></select></div><div><label>对齐</label><select id="bc-l-align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div></div><div class="bc-grid2"><div><label>文字颜色</label><input type="color" id="bc-l-color"></div><div><label>透明度 <b id="bc-l-opacity-v"></b></label><input type="range" id="bc-l-opacity" min="0" max="1" step="0.05"></div></div><div class="bc-rangehead"><span>字号</span><b id="bc-l-size-v"></b></div><input type="range" id="bc-l-size" min="8" max="180" step="1"><div class="bc-rangehead"><span>文字宽度</span><b id="bc-l-width-v"></b></div><input type="range" id="bc-l-width" min="5" max="100" step="1"><div class="bc-rangehead"><span>行距</span><b id="bc-l-line-v"></b></div><input type="range" id="bc-l-line" min="0.8" max="3" step="0.05"><div class="bc-rangehead"><span>字距</span><b id="bc-l-space-v"></b></div><input type="range" id="bc-l-space" min="0" max="30" step="1"><div class="bc-rangehead"><span>旋转</span><b id="bc-l-rotate-v"></b></div><input type="range" id="bc-l-rotate" min="-45" max="45" step="1"><div class="bc-grid2"><label class="bc-check"><input type="checkbox" id="bc-l-bold">粗体</label><label class="bc-check"><input type="checkbox" id="bc-l-italic">斜体</label><label class="bc-check"><input type="checkbox" id="bc-l-stroke">描边</label><label class="bc-check"><input type="checkbox" id="bc-l-shadow">阴影</label></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-text">添加文字层</button><button class="bc-btn danger" id="bc-remove-layer">删除当前层</button></div></div></details>
-          <details class="bc-card"><summary>画布与背景</summary><div class="bc-grid2"><div><label>画布宽度</label><input type="number" id="bc-canvas-w" min="320" max="2160"></div><div><label>画布高度</label><input type="number" id="bc-canvas-h" min="320" max="2160"></div></div><div class="bc-grid2"><div><label>渐变颜色一</label><input type="color" id="bc-bg1"></div><div><label>渐变颜色二</label><input type="color" id="bc-bg2"></div></div><div class="bc-rangehead"><span>背景压暗</span><b id="bc-bg-dim-v"></b></div><input type="range" id="bc-bg-dim" min="0" max="90" step="1"><div class="bc-rangehead"><span>颗粒纹理</span><b id="bc-grain-v"></b></div><input type="range" id="bc-grain" min="0" max="40" step="1"></details>
+          <details class="bc-card" open><summary>文字层与布局</summary><label>当前文字层</label><select id="bc-layer-select"></select><div id="bc-layer-editor"><div class="bc-grid2"><div><label>字体</label><select id="bc-l-font"><option value="serif">通用衬线</option><option value="sourceSerif">思源宋体</option><option value="song">宋体</option><option value="fangSong">仿宋</option><option value="kai">楷体</option><option value="sans">黑体 / 无衬线</option><option value="rounded">圆体</option><option value="mono">等宽体</option><option value="latin">西文衬线</option></select></div><div><label>对齐</label><select id="bc-l-align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div></div><div class="bc-field"><label>本机字体名（可选）</label><input type="text" id="bc-l-custom-font" placeholder="如：霞鹜文楷；对方设备也需安装"></div><div class="bc-grid2"><div><label>文字颜色</label><input type="color" id="bc-l-color"></div><div><label>透明度 <b id="bc-l-opacity-v"></b></label><input type="range" id="bc-l-opacity" min="0" max="1" step="0.05"></div></div><div class="bc-palette" id="bc-text-palette" aria-label="低饱和文字色卡"></div><div class="bc-rangehead"><span>字号</span><b id="bc-l-size-v"></b></div><input type="range" id="bc-l-size" min="8" max="180" step="1"><div class="bc-rangehead"><span>文字宽度</span><b id="bc-l-width-v"></b></div><input type="range" id="bc-l-width" min="5" max="100" step="1"><div class="bc-rangehead"><span>行距</span><b id="bc-l-line-v"></b></div><input type="range" id="bc-l-line" min="0.8" max="3" step="0.05"><div class="bc-rangehead"><span>字距</span><b id="bc-l-space-v"></b></div><input type="range" id="bc-l-space" min="0" max="30" step="1"><div class="bc-rangehead"><span>旋转</span><b id="bc-l-rotate-v"></b></div><input type="range" id="bc-l-rotate" min="-45" max="45" step="1"><div class="bc-grid2"><label class="bc-check"><input type="checkbox" id="bc-l-bold">粗体</label><label class="bc-check"><input type="checkbox" id="bc-l-italic">斜体</label><label class="bc-check"><input type="checkbox" id="bc-l-stroke">描边</label><label class="bc-check"><input type="checkbox" id="bc-l-shadow">阴影</label></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-text">添加文字层</button><button class="bc-btn danger" id="bc-remove-layer">删除当前层</button></div></div></details>
+          <details class="bc-card"><summary>画布与背景</summary><div class="bc-grid2"><div><label>画布宽度</label><input type="number" id="bc-canvas-w" min="320" max="2160"></div><div><label>画布高度</label><input type="number" id="bc-canvas-h" min="320" max="2160"></div></div><label>低饱和背景预设</label><div class="bc-bg-presets" id="bc-bg-presets"></div><div class="bc-grid2"><div><label>渐变颜色一</label><input type="color" id="bc-bg1"></div><div><label>渐变颜色二</label><input type="color" id="bc-bg2"></div></div><div class="bc-rangehead"><span>渐变角度</span><b id="bc-bg-angle-v"></b></div><input type="range" id="bc-bg-angle" min="0" max="360" step="1"><div class="bc-rangehead"><span>背景压暗</span><b id="bc-bg-dim-v"></b></div><input type="range" id="bc-bg-dim" min="0" max="90" step="1"><div class="bc-rangehead"><span>颗粒纹理</span><b id="bc-grain-v"></b></div><input type="range" id="bc-grain" min="0" max="40" step="1"></details>
         </section>
       </div>
       <input id="bc-bg-file" type="file" accept="image/*" hidden><input id="bc-template-file" type="file" accept="application/json,.json,.birdclip" hidden>`;
@@ -206,9 +245,42 @@
     $id('bc-new-template').onclick = newBlankTemplate; $id('bc-save-template').onclick = saveCurrentTemplate; $id('bc-export-template').onclick = exportTemplate; $id('bc-delete-template').onclick = deleteCurrentTemplate;
     $id('bc-layer-select').onchange = e => { selectedLayerId = e.target.value; fillLayerEditor(); scheduleRender(); };
     $id('bc-add-text').onclick = addTextLayer; $id('bc-remove-layer').onclick = removeCurrentLayer;
-    bindLayerEditor(); bindBackgroundEditor(); bindCanvasDrag();
+    bindQuickExcerpt(); bindLayerEditor(); bindBackgroundEditor(); bindCanvasDrag();
   }
-  function refreshAll() { renderTemplateLibrary(); renderContentFields(); renderLayerSelect(); fillLayerEditor(); fillBackgroundEditor(); scheduleRender(); saveWorkSoon(); }
+  function refreshAll() { renderTemplateLibrary(); renderQuickExcerpt(); renderContentFields(); renderLayerSelect(); fillLayerEditor(); fillBackgroundEditor(); scheduleRender(); saveWorkSoon(); }
+
+  function renderQuickExcerpt() {
+    const select = $id('bc-chat-pick'); if (!select) return; select.innerHTML = '';
+    const entries = chatEntries().slice(-20).reverse();
+    entries.forEach(item => {
+      const option = mainDoc.createElement('option'); option.value = String(item.index);
+      const who = item.is_user ? '我' : (item.name || '角色'); const preview = item.text.replace(/\s+/g, ' ').slice(0, 34);
+      option.textContent = `${who} · ${preview}${item.text.length > 34 ? '…' : ''}`; select.appendChild(option);
+    });
+    if (!entries.length) { const option = mainDoc.createElement('option'); option.textContent = '暂时没有可摘录的聊天'; option.value = ''; select.appendChild(option); }
+    const status = $id('bc-clip-status'); if (status) status.textContent = cachedSelection ? `已捕捉 ${cachedSelection.length} 字` : `${entries.length} 条可选`;
+    $id('bc-use-selection').disabled = !cachedSelection;
+    $id('bc-use-picked').disabled = !entries.length;
+  }
+  function bindQuickExcerpt() {
+    $id('bc-use-selection').onclick = () => applyExcerpt(cachedSelection, null, '选中文字');
+    $id('bc-use-last-ai').onclick = () => { const item = [...chatEntries()].reverse().find(x => !x.is_user); applyExcerpt(item?.text, item, '最近回复'); };
+    $id('bc-use-last-user').onclick = () => { const item = [...chatEntries()].reverse().find(x => x.is_user); applyExcerpt(item?.text, item, '最近发言'); };
+    $id('bc-use-picked').onclick = () => { const index = Number($id('bc-chat-pick').value); const item = chatEntries().find(x => x.index === index); applyExcerpt(item?.text, item, '所选聊天'); };
+    $id('bc-use-clipboard').onclick = async () => {
+      try { const text = cleanExcerpt(await mainWin.navigator.clipboard.readText()); applyExcerpt(text, null, '剪贴板'); }
+      catch (e) { toast('浏览器没有允许读取剪贴板，可以长按正文框粘贴', 'warning'); }
+    };
+  }
+  function applyExcerpt(text, message, sourceLabel) {
+    text = cleanExcerpt(text); if (!text) { toast(`没有找到${sourceLabel || '可摘录内容'}`, 'warning'); return; }
+    const layer = currentTextLayers().find(x => x.bind === 'body') || currentTextLayers()[0];
+    if (!layer) { toast('当前模板没有文字层', 'warning'); return; }
+    work.values[layer.bind] = text;
+    const authorLayer = currentTextLayers().find(x => x.bind === 'author');
+    if (message?.name && authorLayer && !String(work.values.author || '').trim()) work.values.author = String(message.name);
+    selectedLayerId = layer.id; renderContentFields(); renderLayerSelect(); fillLayerEditor(); scheduleRender(); saveWorkSoon(); toast(`已摘录到「${FIELD_LABELS[layer.bind] || layer.bind}」`, 'success');
+  }
 
   function renderTemplateLibrary() {
     const list = $id('bc-template-list'); if (!list) return; list.innerHTML = '';
@@ -236,25 +308,34 @@
   }
   function fillLayerEditor() {
     const layer = currentLayer(); if (!layer) return;
-    $id('bc-l-font').value = layer.font || 'serif'; $id('bc-l-align').value = layer.align || 'left'; $id('bc-l-color').value = validColor(layer.color, '#222222');
+    $id('bc-l-font').value = FONT[layer.font] ? layer.font : 'serif'; $id('bc-l-custom-font').value = layer.customFont || ''; $id('bc-l-align').value = layer.align || 'left'; $id('bc-l-color').value = validColor(layer.color, '#222222');
     setRange('bc-l-opacity', layer.opacity ?? 1, 'bc-l-opacity-v', `${Math.round((layer.opacity ?? 1) * 100)}%`); setRange('bc-l-size', layer.size, 'bc-l-size-v', `${Math.round(layer.size)}px`); setRange('bc-l-width', Math.round(layer.w * 100), 'bc-l-width-v', `${Math.round(layer.w * 100)}%`);
     setRange('bc-l-line', layer.lineHeight || 1.6, 'bc-l-line-v', Number(layer.lineHeight || 1.6).toFixed(2)); setRange('bc-l-space', layer.letterSpacing || 0, 'bc-l-space-v', `${layer.letterSpacing || 0}px`); setRange('bc-l-rotate', layer.rotate || 0, 'bc-l-rotate-v', `${layer.rotate || 0}°`);
-    $id('bc-l-bold').checked = Number(layer.weight || 400) >= 600; $id('bc-l-italic').checked = !!layer.italic; $id('bc-l-stroke').checked = !!layer.stroke?.enabled; $id('bc-l-shadow').checked = !!layer.shadow?.enabled;
+    $id('bc-l-bold').checked = Number(layer.weight || 400) >= 600; $id('bc-l-italic').checked = !!layer.italic; $id('bc-l-stroke').checked = !!layer.stroke?.enabled; $id('bc-l-shadow').checked = !!layer.shadow?.enabled; renderTextPalette();
   }
   function setRange(id, value, valueId, display) { $id(id).value = value; $id(valueId).textContent = display; }
   function bindLayerEditor() {
     const update = fn => { const layer = currentLayer(); if (!layer) return; fn(layer); fillLayerEditor(); scheduleRender(); saveWorkSoon(); };
-    $id('bc-l-font').onchange = e => update(layer => layer.font = e.target.value); $id('bc-l-align').onchange = e => update(layer => layer.align = e.target.value); $id('bc-l-color').oninput = e => update(layer => layer.color = e.target.value); $id('bc-l-opacity').oninput = e => update(layer => layer.opacity = Number(e.target.value));
+    $id('bc-l-font').onchange = e => update(layer => layer.font = e.target.value); $id('bc-l-custom-font').oninput = e => update(layer => layer.customFont = e.target.value.slice(0, 80)); $id('bc-l-align').onchange = e => update(layer => layer.align = e.target.value); $id('bc-l-color').oninput = e => update(layer => layer.color = e.target.value); $id('bc-l-opacity').oninput = e => update(layer => layer.opacity = Number(e.target.value));
     $id('bc-l-size').oninput = e => update(layer => layer.size = Number(e.target.value)); $id('bc-l-width').oninput = e => update(layer => layer.w = Number(e.target.value) / 100); $id('bc-l-line').oninput = e => update(layer => layer.lineHeight = Number(e.target.value)); $id('bc-l-space').oninput = e => update(layer => layer.letterSpacing = Number(e.target.value)); $id('bc-l-rotate').oninput = e => update(layer => layer.rotate = Number(e.target.value));
     $id('bc-l-bold').onchange = e => update(layer => layer.weight = e.target.checked ? 700 : 400); $id('bc-l-italic').onchange = e => update(layer => layer.italic = e.target.checked); $id('bc-l-stroke').onchange = e => update(layer => layer.stroke = { enabled: e.target.checked, color: layer.stroke?.color || '#000000', width: layer.stroke?.width || 2 }); $id('bc-l-shadow').onchange = e => update(layer => layer.shadow = { enabled: e.target.checked, color: layer.shadow?.color || '#000000', blur: layer.shadow?.blur || 14, x: layer.shadow?.x || 0, y: layer.shadow?.y || 5 });
   }
   function fillBackgroundEditor() {
-    const t = work.template; const bg = t.background; $id('bc-canvas-w').value = t.canvas.width; $id('bc-canvas-h').value = t.canvas.height; $id('bc-bg1').value = validColor(bg.color1, '#f3efe7'); $id('bc-bg2').value = validColor(bg.color2, '#ffffff'); setRange('bc-bg-dim', bg.dim || 0, 'bc-bg-dim-v', `${bg.dim || 0}%`); setRange('bc-grain', bg.grain || 0, 'bc-grain-v', String(bg.grain || 0));
+    const t = work.template; const bg = t.background; $id('bc-canvas-w').value = t.canvas.width; $id('bc-canvas-h').value = t.canvas.height; $id('bc-bg1').value = validColor(bg.color1, '#f3efe7'); $id('bc-bg2').value = validColor(bg.color2, '#ffffff'); setRange('bc-bg-angle', bg.angle ?? 135, 'bc-bg-angle-v', `${Math.round(bg.angle ?? 135)}°`); setRange('bc-bg-dim', bg.dim || 0, 'bc-bg-dim-v', `${bg.dim || 0}%`); setRange('bc-grain', bg.grain || 0, 'bc-grain-v', String(bg.grain || 0)); renderBackgroundPresets();
   }
   function bindBackgroundEditor() {
     const change = fn => { fn(work.template); scheduleRender(); saveWorkSoon(); };
-    $id('bc-canvas-w').onchange = e => change(t => t.canvas.width = clamp(e.target.value, 320, 2160)); $id('bc-canvas-h').onchange = e => change(t => t.canvas.height = clamp(e.target.value, 320, 2160)); $id('bc-bg1').oninput = e => change(t => t.background.color1 = e.target.value); $id('bc-bg2').oninput = e => change(t => t.background.color2 = e.target.value);
-    $id('bc-bg-dim').oninput = e => change(t => { t.background.dim = Number(e.target.value); $id('bc-bg-dim-v').textContent = `${e.target.value}%`; }); $id('bc-grain').oninput = e => change(t => { t.background.grain = Number(e.target.value); $id('bc-grain-v').textContent = e.target.value; });
+    $id('bc-canvas-w').onchange = e => change(t => t.canvas.width = clamp(e.target.value, 320, 2160)); $id('bc-canvas-h').onchange = e => change(t => t.canvas.height = clamp(e.target.value, 320, 2160)); $id('bc-bg1').oninput = e => change(t => { t.background.color1 = e.target.value; renderBackgroundPresets(); }); $id('bc-bg2').oninput = e => change(t => { t.background.color2 = e.target.value; renderBackgroundPresets(); });
+    $id('bc-bg-angle').oninput = e => change(t => { t.background.angle = Number(e.target.value); $id('bc-bg-angle-v').textContent = `${e.target.value}°`; }); $id('bc-bg-dim').oninput = e => change(t => { t.background.dim = Number(e.target.value); $id('bc-bg-dim-v').textContent = `${e.target.value}%`; }); $id('bc-grain').oninput = e => change(t => { t.background.grain = Number(e.target.value); $id('bc-grain-v').textContent = e.target.value; });
+  }
+
+  function renderTextPalette() {
+    const box = $id('bc-text-palette'); const layer = currentLayer(); if (!box || !layer) return; box.innerHTML = '';
+    TEXT_COLORS.forEach(color => { const button = mainDoc.createElement('button'); button.type = 'button'; button.className = `bc-swatch ${String(layer.color).toLowerCase() === color ? 'active' : ''}`; button.style.setProperty('--bc-swatch', color); button.title = color; button.setAttribute('aria-label', `文字颜色 ${color}`); button.onclick = () => { layer.color = color; $id('bc-l-color').value = color; renderTextPalette(); scheduleRender(); saveWorkSoon(); }; box.appendChild(button); });
+  }
+  function renderBackgroundPresets() {
+    const box = $id('bc-bg-presets'); if (!box) return; box.innerHTML = ''; const bg = work.template.background;
+    BACKGROUND_PRESETS.forEach(preset => { const button = mainDoc.createElement('button'); button.type = 'button'; button.className = `bc-bg-preset ${bg.color1 === preset.colors[0] && bg.color2 === preset.colors[1] ? 'active' : ''}`; button.style.setProperty('--bc-bg-a', preset.colors[0]); button.style.setProperty('--bc-bg-b', preset.colors[1]); button.title = preset.name; button.innerHTML = `<i></i><span>${preset.name}</span>`; button.onclick = () => { bg.color1 = preset.colors[0]; bg.color2 = preset.colors[1]; fillBackgroundEditor(); scheduleRender(); saveWorkSoon(); }; box.appendChild(button); });
   }
 
   async function askName(defaultValue) {
@@ -319,7 +400,7 @@
   }
   function drawTextLayer(ctx, layer, values, W, H, bounds) {
     const text = String(layer.bind ? values[layer.bind] ?? '' : layer.text ?? ''); if (!text) return;
-    const x = layer.x * W, y = layer.y * H, width = layer.w * W; const scale = W / 720; const size = layer.size * scale; const lineHeight = size * Number(layer.lineHeight || 1.5); const spacing = Number(layer.letterSpacing || 0) * scale; const font = FONT[layer.font] || FONT.serif;
+    const x = layer.x * W, y = layer.y * H, width = layer.w * W; const scale = W / 720; const size = layer.size * scale; const lineHeight = size * Number(layer.lineHeight || 1.5); const spacing = Number(layer.letterSpacing || 0) * scale; const customFont = String(layer.customFont || '').replace(/["\\]/g, '').trim(); const font = customFont ? `"${customFont}",${FONT[layer.font] || FONT.serif}` : (FONT[layer.font] || FONT.serif);
     ctx.save(); ctx.translate(x + width / 2, y); ctx.rotate(Number(layer.rotate || 0) * Math.PI / 180); ctx.translate(-(x + width / 2), -y); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); ctx.font = `${layer.italic ? 'italic ' : ''}${Number(layer.weight || 400)} ${size}px ${font}`; ctx.textBaseline = 'top';
     if (layer.shadow?.enabled) { ctx.shadowColor = layer.shadow.color || '#000000'; ctx.shadowBlur = Number(layer.shadow.blur || 12) * scale; ctx.shadowOffsetX = Number(layer.shadow.x || 0) * scale; ctx.shadowOffsetY = Number(layer.shadow.y || 4) * scale; }
     const lines = wrapText(ctx, text, width, spacing); let py = y;
@@ -363,7 +444,7 @@
     if (!item) { item = mainDoc.createElement('div'); item.id = 'bc-menu-entry'; item.className = 'list-group-item flex-container flexGap5 interactable'; item.tabIndex = 0; item.innerHTML = '<div class="fa-fw fa-solid fa-wand-magic-sparkles extensionsMenuExtensionButton"></div><span>落句排版室</span>'; menu.appendChild(item); }
     item.onclick = openFromMenu; item.dataset.bcGen = RUN_ID; return true;
   }
-  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); closePanel(); ['bc-menu-entry', 'bc-imgpop'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
-  function install() { ensureMenuEntry(); entryObserver = new MutationObserver(() => ensureMenuEntry()); entryObserver.observe(mainDoc.body, { childList: true, subtree: true }); entryTimer = setInterval(ensureMenuEntry, 1200); toast(`${SCRIPT_NAME} v${VERSION} 已加载`, 'success'); }
+  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); mainDoc.removeEventListener('selectionchange', captureSelection); closePanel(); ['bc-menu-entry', 'bc-imgpop'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
+  function install() { mainDoc.addEventListener('selectionchange', captureSelection); captureSelection(); ensureMenuEntry(); entryObserver = new MutationObserver(() => ensureMenuEntry()); entryObserver.observe(mainDoc.body, { childList: true, subtree: true }); entryTimer = setInterval(ensureMenuEntry, 1200); toast(`${SCRIPT_NAME} v${VERSION} 已加载`, 'success'); }
   mainWin.__birdclipStudioCleanup = cleanup; setTimeout(install, 700);
 })();
