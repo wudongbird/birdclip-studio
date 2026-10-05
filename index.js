@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.2.1';
+  const VERSION = '2.2.2';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -237,7 +237,7 @@
     return `<div class="bc-top"><button class="bc-icon" id="bc-close">‹</button><h2>落句排版室 <small>v${VERSION}</small></h2><button class="bc-icon" id="bc-help" title="模板说明">?</button></div>
       <div class="bc-wrap">
         <section class="bc-preview">
-          <div class="bc-canvasbox"><canvas id="bc-canvas"></canvas></div>
+          <div class="bc-canvasbox"><canvas id="bc-canvas"></canvas><button class="bc-preview-size" id="bc-preview-size" type="button" title="放大预览" aria-label="切换预览大小">⛶</button></div>
           <div class="bc-tip">点选并拖动画布中的文字，可以直接调整位置</div>
           <div class="bc-actions"><button class="bc-btn" id="bc-bg-btn">上传背景</button><button class="bc-btn" id="bc-clear-bg">清除背景</button><button class="bc-btn primary" id="bc-export-png">导出 PNG</button></div>
         </section>
@@ -273,6 +273,7 @@
   }
   function bindUI() {
     $id('bc-close').onclick = closePanel;
+    $id('bc-preview-size').onclick = () => { const preview = $id('bc-panel').querySelector('.bc-preview'); const expanded = preview.classList.toggle('expanded'); $id('bc-preview-size').textContent = expanded ? '⌃' : '⛶'; $id('bc-preview-size').title = expanded ? '恢复悬停预览' : '放大预览'; };
     $id('bc-help').onclick = () => showInfo('模板包会保存画布、背景与全部文字层样式。作品文字只作为模板的默认示例；别人导入后可以直接替换。');
     $id('bc-bg-btn').onclick = () => $id('bc-bg-file').click(); $id('bc-clear-bg').onclick = () => { work.template.background.image = ''; scheduleRender(); saveWorkSoon(); };
     $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => $id('bc-template-file').click(); $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
