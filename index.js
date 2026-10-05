@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '0.02';
+  const VERSION = '0.03';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -296,7 +296,7 @@
           <div class="bc-actions"><button class="bc-btn" id="bc-bg-btn">上传背景</button><button class="bc-btn" id="bc-clear-bg">清除背景</button><button class="bc-btn primary" id="bc-export-png">导出 PNG</button></div>
         </section>
         <section class="bc-controls">
-          <div class="bc-card"><div class="bc-cardhead"><h3>选择模板</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><details class="bc-subdetails"><summary>模板管理</summary><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></details></div>
+          <div class="bc-card"><div class="bc-cardhead"><h3>选择模板</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><details class="bc-subdetails"><summary>模板管理</summary><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-paste-template">粘贴 JSON</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></details></div>
           <div class="bc-card"><div class="bc-cardhead"><h3>图层</h3><span>上方图层会盖住下方</span></div><div class="bc-element-list" id="bc-element-list"></div><div class="bc-layer-actions"><button class="bc-btn" id="bc-add-text">＋文字</button><button class="bc-btn" id="bc-add-image">＋图片</button><button class="bc-btn" id="bc-duplicate-element">复制</button><button class="bc-btn" id="bc-lock-element">锁定</button><button class="bc-btn" id="bc-layer-top">置顶</button><button class="bc-btn" id="bc-layer-up">上移</button><button class="bc-btn" id="bc-layer-down">下移</button><button class="bc-btn" id="bc-layer-bottom">置底</button><button class="bc-btn danger" id="bc-delete-element">删除</button></div></div>
           <div class="bc-card"><h3>作品文字</h3><p class="bc-muted">每个文本框彼此独立。点选文字层后可在这里修改内容。</p><div id="bc-content-fields"></div></div>
           <details class="bc-card"><summary>从聊天中摘录</summary><p class="bc-muted bc-clip-help">也可以回到聊天，长按选中一段后直接点“书摘”。</p><div class="bc-cardhead"><span id="bc-clip-status"></span></div><div class="bc-button-grid bc-clip-actions"><button class="bc-btn" id="bc-use-selection">上次选中的段落</button><button class="bc-btn" id="bc-use-clipboard">粘贴剪贴板</button></div><div class="bc-pick-row"><select id="bc-chat-pick" aria-label="最近聊天"></select><button class="bc-btn" id="bc-use-picked">使用整条</button></div><button id="bc-use-last-ai" hidden></button><button id="bc-use-last-user" hidden></button></details>
@@ -305,6 +305,7 @@
           <details class="bc-card"><summary>画布与背景</summary><label>常用比例</label><select id="bc-canvas-ratio"><option value="custom">自定义</option><option value="3:4">3:4</option><option value="4:5">4:5</option><option value="1:1">1:1</option><option value="9:16">9:16</option><option value="long">长图 9:24</option></select><div class="bc-grid2"><div><label>画布宽度</label><input type="number" id="bc-canvas-w" min="320" max="2160"></div><div><label>画布高度</label><input type="number" id="bc-canvas-h" min="320" max="5000"></div></div><label>低饱和背景预设</label><div class="bc-bg-presets" id="bc-bg-presets"></div><div class="bc-grid2"><div><label>渐变颜色一</label><input type="color" id="bc-bg1"></div><div><label>渐变颜色二</label><input type="color" id="bc-bg2"></div></div><div class="bc-rangehead"><span>渐变角度</span><b id="bc-bg-angle-v"></b></div><input type="range" id="bc-bg-angle" min="0" max="360" step="1"><div class="bc-rangehead"><span>背景压暗</span><b id="bc-bg-dim-v"></b></div><input type="range" id="bc-bg-dim" min="0" max="90" step="1"><div class="bc-rangehead"><span>颗粒纹理</span><b id="bc-grain-v"></b></div><input type="range" id="bc-grain" min="0" max="40" step="1"></details>
         </section>
       </div>
+      <div class="bc-json-dialog" id="bc-json-dialog" hidden><div class="bc-json-dialog-card" role="dialog" aria-modal="true" aria-labelledby="bc-json-dialog-title"><h3 id="bc-json-dialog-title">粘贴 JSON 导入模板</h3><p class="bc-muted">请粘贴完整的 .birdclip.json 内容。</p><textarea id="bc-json-text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="{&#10;  &quot;format&quot;: &quot;birdclip-template&quot;,&#10;  ...&#10;}"></textarea><div class="bc-json-dialog-actions"><button class="bc-btn" id="bc-json-cancel">取消</button><button class="bc-btn primary" id="bc-json-confirm">确认导入</button></div></div></div>
       <input id="bc-bg-file" type="file" accept="image/*" hidden><input id="bc-image-file" type="file" accept="image/*" hidden><input id="bc-template-file" type="file" accept="application/json,.json,.birdclip" hidden><input id="bc-font-file" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden>`;
   }
 
@@ -332,7 +333,8 @@
     $id('bc-preview-size').onclick = () => { const preview = $id('bc-panel').querySelector('.bc-preview'); const expanded = preview.classList.toggle('expanded'); $id('bc-preview-size').textContent = expanded ? '⌃' : '⛶'; $id('bc-preview-size').title = expanded ? '恢复悬停预览' : '放大预览'; };
     $id('bc-help').onclick = () => showInfo('模板包只保存画布、背景、全部图层及其版式参数，不会保存当前书摘正文。导入后仍可继续新增、删除、移动和修改任意图层。');
     $id('bc-bg-btn').onclick = () => openFilePicker('bc-bg-file'); $id('bc-clear-bg').onclick = () => { work.template.background.image = ''; scheduleRender(); saveWorkSoon(); };
-    $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => openFilePicker('bc-template-file'); $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
+    $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => openFilePicker('bc-template-file'); $id('bc-paste-template').onclick = openPasteTemplateDialog; $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
+    $id('bc-json-cancel').onclick = closePasteTemplateDialog; $id('bc-json-confirm').onclick = importPastedTemplate; $id('bc-json-dialog').onclick = event => { if (event.target === $id('bc-json-dialog')) closePasteTemplateDialog(); };
     $id('bc-image-upload').onclick = () => openFilePicker('bc-image-file'); $id('bc-image-file').onchange = importLayerImage; $id('bc-image-clear').onclick = clearLayerImage; $id('bc-add-image').onclick = addImageLayer;
     $id('bc-font-upload').onclick = () => openFilePicker('bc-font-file'); $id('bc-font-file').onchange = importFontFile; $id('bc-font-remove').onclick = removeCurrentFont;
     ['bc-bg-file', 'bc-image-file', 'bc-template-file', 'bc-font-file'].forEach(id => { const input = $id(id); input.addEventListener('cancel', finishFilePicker); });
@@ -588,9 +590,23 @@
     const longest = Math.max(...readable.map(attempt => attempt.length));
     throw new Error(`模板文件读取不完整或 JSON 无法解析（实际读取 ${longest} 个字符）`);
   }
+  async function installImportedTemplate(raw) {
+    const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedElementId = selectedLayerId || selectedImageId || work.template.layers.at(-1)?.id || ''; selectedCanvasType = currentElement()?.type || 'text'; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success');
+  }
   async function importTemplateFile(event) {
     const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
-    try { const raw = await readTemplateJson(file); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedElementId = selectedLayerId || selectedImageId || work.template.layers.at(-1)?.id || ''; selectedCanvasType = currentElement()?.type || 'text'; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
+    try { await installImportedTemplate(await readTemplateJson(file)); } catch (e) { showLaunchError(e); }
+  }
+  function openPasteTemplateDialog() {
+    const dialog = $id('bc-json-dialog'); const input = $id('bc-json-text'); if (!dialog || !input) return; input.value = ''; dialog.hidden = false; mainWin.setTimeout(() => input.focus(), 30);
+  }
+  function closePasteTemplateDialog() { const dialog = $id('bc-json-dialog'); if (dialog) dialog.hidden = true; }
+  async function importPastedTemplate() {
+    const input = $id('bc-json-text'); const text = String(input?.value || '').replace(/^\uFEFF/, '').trim();
+    if (!text) { showLaunchError(new Error('粘贴内容为空，请粘贴完整模板 JSON')); return; }
+    let raw;
+    try { raw = JSON.parse(text); } catch (error) { showLaunchError(new Error(`JSON 解析失败：${String(error?.message || error)}`)); return; }
+    try { await installImportedTemplate(raw); closePasteTemplateDialog(); } catch (error) { showLaunchError(error); }
   }
   async function deleteCurrentTemplate() {
     const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedElementId = selectedLayerId || selectedImageId || work.template.layers.at(-1)?.id || ''; selectedCanvasType = currentElement()?.type || 'text'; refreshAll();
