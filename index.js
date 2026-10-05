@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.4.0';
+  const VERSION = '2.4.1';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -97,76 +97,6 @@
         { id: 'title', type: 'text', bind: 'title', x: .12, y: .23, w: .76, size: 55, font: 'serif', color: '#eef2f2', align: 'center', lineHeight: 1.2, letterSpacing: 6, opacity: 1, rotate: 0, shadow: { enabled: true, color: '#7ba9b7', blur: 14, x: 0, y: 0 } },
         { id: 'body', type: 'text', bind: 'body', x: .16, y: .37, w: .68, size: 31, font: 'serif', color: '#e8eeee', align: 'center', lineHeight: 1.75, letterSpacing: 2, opacity: .94, rotate: 0 },
         { id: 'sub', type: 'text', bind: 'subtitle', x: .18, y: .75, w: .64, size: 15, font: 'latin', color: '#9ebac3', align: 'center', lineHeight: 1.2, letterSpacing: 4, opacity: .62, rotate: 0 },
-      ],
-    },
-    {
-      format: FORMAT, schemaVersion: 1, id: 'builtin-zine-triptych', name: '三页刊物', builtin: true,
-      canvas: { width: 900, height: 1200 },
-      background: { color1: '#e9e6df', color2: '#f6f3ed', angle: 150, image: '', dim: 0, grain: 16 },
-      defaultContent: { title: '纸上三幕', subtitle: 'THREE NOTES / ZINE', body: '第一段文字放在这里。适合短句、片段或一个安静的开场。', author: '第三页 · 尾声', source: '第二页 · 过场', watermark: 'VOL. 01', extra: '第二段文字可以与前文呼应，也可以保留另一种情绪。' },
-      layers: [
-        { id: 'zine-title', type: 'text', bind: 'title', x: .08, y: .07, w: .84, size: 57, font: 'sourceHanSerif', color: '#191817', align: 'center', lineHeight: 1.15, letterSpacing: 5, weight: 700, opacity: 1, rotate: 0 },
-        { id: 'zine-sub', type: 'text', bind: 'subtitle', x: .17, y: .145, w: .66, size: 17, font: 'latin', color: '#56524d', align: 'center', lineHeight: 1.2, letterSpacing: 4, opacity: .78, rotate: 0 },
-        { id: 'zine-rule', type: 'line', x1: .35, y1: .205, x2: .65, y2: .205, color: '#736d65', width: 1, opacity: .55 },
-        { id: 'zine-card-a', type: 'rect', x: .035, y: .30, w: .29, h: .62, fill: '#f7f5ef', color: '#cbc5bc', width: 1, opacity: .96 },
-        { id: 'zine-card-b', type: 'rect', x: .355, y: .265, w: .29, h: .68, fill: '#17201c', color: '#2f3833', width: 1, opacity: 1 },
-        { id: 'zine-card-c', type: 'rect', x: .675, y: .30, w: .29, h: .62, fill: '#faf8f2', color: '#cbc5bc', width: 1, opacity: .96 },
-        { id: 'zine-image-a', type: 'image', name: '左栏图片', x: .035, y: .30, w: .29, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8dce0', '#eef0ed'] },
-        { id: 'zine-image-b', type: 'image', name: '中栏图片', x: .355, y: .265, w: .29, h: .38, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#15241f', '#344139'] },
-        { id: 'zine-image-c', type: 'image', name: '右栏图片', x: .675, y: .30, w: .29, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#adbcc2', '#e4e1d9'] },
-        { id: 'zine-body-a', type: 'text', bind: 'body', x: .06, y: .56, w: .24, size: 15, font: 'sourceHanSerif', color: '#4d4944', align: 'left', lineHeight: 1.75, letterSpacing: .4, opacity: .95, rotate: 0 },
-        { id: 'zine-mark-b', type: 'text', bind: 'source', x: .385, y: .69, w: .23, size: 22, font: 'wenkai', color: '#eeebe3', align: 'center', lineHeight: 1.25, letterSpacing: 3, opacity: .95, rotate: 0 },
-        { id: 'zine-body-b', type: 'text', bind: 'extra', x: .385, y: .75, w: .23, size: 14, font: 'sourceHanSerif', color: '#d7d5cf', align: 'left', lineHeight: 1.7, letterSpacing: .4, opacity: .88, rotate: 0 },
-        { id: 'zine-mark-c', type: 'text', bind: 'author', x: .70, y: .55, w: .24, size: 21, font: 'wenkai', color: '#394752', align: 'left', lineHeight: 1.25, letterSpacing: 2, opacity: .95, rotate: 0 },
-        { id: 'zine-vol', type: 'text', bind: 'watermark', x: .72, y: .86, w: .20, size: 12, font: 'latin', color: '#8a8379', align: 'right', lineHeight: 1.2, letterSpacing: 2, opacity: .7, rotate: 0 },
-      ],
-    },
-    {
-      format: FORMAT, schemaVersion: 1, id: 'builtin-crimson-fragment', name: '绯色残章', builtin: true,
-      canvas: { width: 720, height: 1080 },
-      background: { color1: '#8f1118', color2: '#a31b1f', angle: 160, image: '', dim: 0, grain: 8 },
-      defaultContent: { title: '风从旧页吹来', subtitle: '一\n纸\n旧\n梦', body: '推开虚掩的门，风便把尘封许久的气味一并送来。那些没有说完的话停在纸页之间，像迟迟不肯落下的一场雨。\n\n我在昏暗里辨认旧日留下的痕迹，也终于明白，有些告别并不会随着时间消失。', author: '—— 摘录', source: '', watermark: '旧页 / 01', extra: '' },
-      layers: [
-        { id: 'crimson-image', type: 'image', name: '顶部横图', x: .31, y: .10, w: .76, h: .28, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d9d1cc', '#8d2930'], fade: { edge: 'bottom', color: '#99191d', start: .42 } },
-        { id: 'crimson-title', type: 'text', bind: 'title', x: .50, y: .035, w: .70, size: 50, font: 'zhuque', color: '#f6eee7', align: 'left', lineHeight: 1.15, letterSpacing: 3, weight: 700, opacity: 1, rotate: 0 },
-        { id: 'crimson-vertical', type: 'text', bind: 'subtitle', x: .07, y: .08, w: .16, size: 36, font: 'wenkai', color: '#f7eee6', align: 'center', lineHeight: 1.15, letterSpacing: 1, opacity: .92, rotate: 0 },
-        { id: 'crimson-mark', type: 'text', bind: 'watermark', x: .245, y: .18, w: .08, size: 16, font: 'wenkai', color: '#f0d8cf', align: 'center', lineHeight: 1.5, letterSpacing: 1, opacity: .85, rotate: 90 },
-        { id: 'crimson-rule', type: 'line', x1: .50, y1: .09, x2: .98, y2: .09, color: '#f5e9df', width: 2, opacity: .9 },
-        { id: 'crimson-body', type: 'text', bind: 'body', x: .055, y: .43, w: .89, size: 24, font: 'sourceHanSerif', color: '#fff6ed', align: 'left', lineHeight: 1.72, letterSpacing: .5, opacity: .98, rotate: 0 },
-        { id: 'crimson-author', type: 'text', bind: 'author', x: .59, y: .925, w: .34, size: 15, font: 'wenkai', color: '#f3dcd2', align: 'right', lineHeight: 1.2, letterSpacing: 2, opacity: .8, rotate: 0 },
-      ],
-    },
-    {
-      format: FORMAT, schemaVersion: 1, id: 'builtin-frost-letter', name: '霜枝手记', builtin: true,
-      canvas: { width: 720, height: 920 },
-      background: { color1: '#f4f3ef', color2: '#faf9f5', angle: 145, image: '', dim: 0, grain: 20 },
-      defaultContent: { title: '一年 · 心里起了一场雪', subtitle: '如果我不曾问过你的姓名', body: '雁阵远走高飞时，仍旧会想起未曾寄出的信。这样的冬天仿佛总会成为旧梦的一部分。', author: '希望来年仍有回音', source: '后来再没有寻到那一点留念的踪迹。日子又冷一天，等到雪慢慢照亮长夜。', watermark: '冬日手记', extra: '温暖如同呼唤\n只是想起你的名字' },
-      layers: [
-        { id: 'frost-top-image', type: 'image', name: '顶部淡图', x: 0, y: 0, w: .54, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: .30, radius: 0, placeholder: ['#d9e1e7', '#f6f4ef'], fade: { edge: 'right', color: '#f7f6f2', start: .35 } },
-        { id: 'frost-title', type: 'text', bind: 'title', x: .62, y: .13, w: .34, size: 14, font: 'wenkai', color: '#55575a', align: 'center', lineHeight: 1.4, letterSpacing: 1, opacity: .9, rotate: 0 },
-        { id: 'frost-sub', type: 'text', bind: 'subtitle', x: .62, y: .17, w: .34, size: 13, font: 'wenkai', color: '#77797b', align: 'center', lineHeight: 1.3, letterSpacing: .5, opacity: .8, rotate: 0 },
-        { id: 'frost-body', type: 'text', bind: 'body', x: .16, y: .27, w: .76, size: 23, font: 'sourceHanSerif', color: '#25282b', align: 'center', lineHeight: 1.55, letterSpacing: .4, weight: 700, opacity: .96, rotate: 0 },
-        { id: 'frost-main-image', type: 'image', name: '中部主图', x: 0, y: .44, w: .64, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#b7c9dc', '#edf1f3'] },
-        { id: 'frost-extra', type: 'text', bind: 'extra', x: .43, y: .47, w: .53, size: 34, font: 'wenkai', color: '#f7f5ee', align: 'center', lineHeight: 1.35, letterSpacing: 1, weight: 700, opacity: 1, rotate: 0, stroke: { enabled: true, color: '#30343b', width: 4 }, shadow: { enabled: true, color: '#ffffff', blur: 3, x: 0, y: 0 } },
-        { id: 'frost-source', type: 'text', bind: 'source', x: .08, y: .70, w: .84, size: 20, font: 'sourceHanSerif', color: '#333638', align: 'center', lineHeight: 1.55, letterSpacing: .5, weight: 700, opacity: .95, rotate: 0 },
-        { id: 'frost-author', type: 'text', bind: 'author', x: .08, y: .87, w: .72, size: 17, font: 'wenkai', color: '#777b7e', align: 'left', lineHeight: 1.4, letterSpacing: .7, opacity: .85, rotate: 0 },
-        { id: 'frost-quote', type: 'text', text: '”', x: .73, y: .82, w: .12, size: 55, font: 'serif', color: '#111111', align: 'center', lineHeight: 1, letterSpacing: 0, opacity: 1, rotate: 0 },
-      ],
-    },
-    {
-      format: FORMAT, schemaVersion: 1, id: 'builtin-white-vermilion', name: '白页朱印', builtin: true,
-      canvas: { width: 720, height: 940 },
-      background: { color1: '#fbfbfa', color2: '#f4f4f1', angle: 90, image: '', dim: 0, grain: 5 },
-      defaultContent: { title: '相望', subtitle: '故事到这里，仍未写完。', body: '曾经有流言辗转于我们之间。\n\n人以目光辨认世界，以言语留下证词，而记忆常常比事实更接近一场漫长的梦。后来我再想起那天，最先浮现的仍是没有说出口的话。', author: '//: QUOTE ARCHIVE', source: '', watermark: '神鬼该死，拜我无用。', extra: '' },
-      layers: [
-        { id: 'vermilion-block', type: 'rect', x: .55, y: .15, w: .62, h: .17, fill: '#6f0010', opacity: 1 },
-        { id: 'vermilion-ghost', type: 'text', bind: 'title', x: .86, y: -.02, w: .36, size: 112, font: 'zhuque', color: '#d8d8d5', align: 'left', lineHeight: .95, letterSpacing: -4, weight: 700, opacity: .8, rotate: 0 },
-        { id: 'vermilion-title', type: 'text', bind: 'title', x: .86, y: .155, w: .36, size: 100, font: 'zhuque', color: '#f2eeea', align: 'left', lineHeight: .95, letterSpacing: -3, weight: 700, opacity: 1, rotate: 0 },
-        { id: 'vermilion-mark', type: 'text', bind: 'watermark', x: .42, y: .335, w: .57, size: 13, font: 'sourceHanSerif', color: '#5d5d5b', align: 'center', lineHeight: 1.2, letterSpacing: 12, opacity: .85, rotate: 0 },
-        { id: 'vermilion-author', type: 'text', bind: 'author', x: .69, y: .39, w: .28, size: 13, font: 'latin', color: '#c7c7c4', align: 'right', lineHeight: 1.2, letterSpacing: 1, italic: true, opacity: .75, rotate: 0 },
-        { id: 'vermilion-sub', type: 'text', bind: 'subtitle', x: .05, y: .51, w: .86, size: 20, font: 'sourceHanSerif', color: '#4c4c4a', align: 'left', lineHeight: 1.5, letterSpacing: .8, opacity: .92, rotate: 0 },
-        { id: 'vermilion-body', type: 'text', bind: 'body', x: .05, y: .59, w: .88, size: 21, font: 'sourceHanSerif', color: '#454543', align: 'left', lineHeight: 1.65, letterSpacing: .4, opacity: .92, rotate: 0 },
-        { id: 'vermilion-foot', type: 'line', x1: .44, y1: .91, x2: .56, y2: .91, color: '#60605e', width: 1.5, opacity: .8 },
       ],
     },
   ];
