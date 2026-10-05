@@ -10,7 +10,7 @@
   const mainWin = window;
   const SCRIPT_ID = 'birdclip-studio-extension';
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '1.0.0';
+  const VERSION = '1.0.1';
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}.${Math.random().toString(36).slice(2,7)}`;
   const LS_KEY = `${SCRIPT_ID}:settings`;
   const $id = id => mainDoc.getElementById(id);
@@ -39,6 +39,8 @@
   let state = loadState();
   let bgImg = null;
   let raf = 0;
+  let nativePopup = null;
+  let nativePopupApi = null;
 
   function loadState(){
     try { return normalize({...DEFAULTS,...JSON.parse(mainWin.localStorage.getItem(LS_KEY)||'{}')}); }
@@ -83,14 +85,50 @@
       </section></div>`;
   }
 
+  function popupApi(){
+    try {
+      const ctx=mainWin.SillyTavern?.getContext?.();
+      if(ctx?.Popup&&ctx?.POPUP_TYPE)return ctx;
+    } catch(e) {}
+    return null;
+  }
   function openPanel(){
-    closePanel();
+    closePanel(true);
     const sel=selectedText(); if(sel && sel.length<3000) state.quote=sel;
     const ctx=getContext(); if(!state.author) state.author=ctx.charName;
     const panel=mainDoc.createElement('div'); panel.id='bc-panel'; panel.dataset.bcGen=RUN_ID; panel.innerHTML=panelHtml(); mainDoc.body.appendChild(panel);
+    const api=popupApi();
+    if(api){
+      panel.classList.add('bc-native');
+      nativePopupApi=api;
+      nativePopup=new api.Popup(panel,api.POPUP_TYPE.DISPLAY,'',{
+        wide:true,
+        large:true,
+        allowVerticalScrolling:true,
+        allowHorizontalScrolling:false,
+        okButton:false,
+        cancelButton:false,
+        onClosing:async()=>{save();panel.remove();mainDoc.body.style.overflow='';nativePopup=null;nativePopupApi=null;return true;}
+      });
+      Promise.resolve(nativePopup.show()).catch(showLaunchError);
+    }else{
+      mainDoc.body.style.overflow='hidden';
+    }
     bindUI(); rebuildChars(0); loadBg().then(render); mainDoc.body.style.overflow='hidden';
   }
-  function closePanel(){ const p=$id('bc-panel'); if(p)p.remove(); mainDoc.body.style.overflow=''; }
+  function closePanel(silent=false){
+    const popup=nativePopup;
+    const api=nativePopupApi;
+    nativePopup=null;nativePopupApi=null;
+    if(popup&&!popup.__bcClosing){
+      popup.__bcClosing=true;
+      const result=api?.POPUP_RESULT?.CANCELLED??api?.POPUP_RESULT?.NEGATIVE??false;
+      try{Promise.resolve(popup.complete(result)).catch(()=>{});}catch(e){}
+    }
+    const p=$id('bc-panel');if(p)p.remove();
+    mainDoc.body.style.overflow='';
+    if(!silent)save();
+  }
 
   function bindUI(){
     $id('bc-close').onclick=()=>{save();closePanel();};
@@ -181,28 +219,21 @@
   function safeName(s){return String(s||'').replace(/[\\/:*?"<>|]/g,'').trim().slice(0,30);}
   function showImage(src){$id('bc-imgpop')?.remove();const p=mainDoc.createElement('div');p.id='bc-imgpop';p.innerHTML=`<button>×</button><img alt="导出的书摘"><p>长按图片保存</p>`;p.querySelector('img').src=src;p.querySelector('button').onclick=()=>p.remove();mainDoc.body.appendChild(p);}
 
-  function makeLaunchShell(){
-    $id('bc-launch-shell')?.remove();
-    const shell=mainDoc.createElement('div');
-    shell.id='bc-launch-shell';
-    shell.style.cssText='position:fixed!important;inset:0!important;z-index:2147483647!important;background:rgba(245,243,240,.98)!important;color:#292929!important;display:flex!important;align-items:center!important;justify-content:center!important;font-family:system-ui,-apple-system,"PingFang SC",sans-serif!important;padding:24px!important;';
-    shell.innerHTML='<div style="text-align:center"><div style="font-size:28px;margin-bottom:12px">✦</div><div style="font-size:16px">正在打开落句排版室…</div></div>';
-    mainDoc.body.appendChild(shell);
-    return shell;
-  }
   function showLaunchError(err){
-    let shell=$id('bc-launch-shell')||makeLaunchShell();
     const msg=String(err?.stack||err||'未知错误');
-    shell.innerHTML='<div style="max-width:560px;width:100%;background:#fff;border:1px solid #ddd;border-radius:14px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.12)"><div style="font-size:17px;font-weight:700;margin-bottom:8px">排版室启动失败</div><div style="font-size:13px;line-height:1.65;color:#666;word-break:break-word;white-space:pre-wrap"></div><button id="bc-launch-close" style="margin-top:14px;border:0;border-radius:9px;background:#333;color:#fff;padding:9px 18px">关闭</button></div>';
-    shell.querySelector('div div:nth-child(2)').textContent=msg;
-    shell.querySelector('#bc-launch-close').onclick=()=>{shell.remove();closePanel();};
+    const api=popupApi();
+    try{
+      if(api?.Popup?.show?.text){api.Popup.show.text('排版室启动失败',msg);return;}
+    }catch(e){}
+    try{mainWin.alert(`排版室启动失败\n\n${msg}`);}catch(e){}
   }
-  function openFromMenu(){
-    makeLaunchShell();
+  function openFromMenu(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    toast('正在打开落句排版室…','info');
     mainWin.setTimeout(()=>{
       try{
         openPanel();
-        $id('bc-launch-shell')?.remove();
       }catch(err){
         try{console.error('[落句排版室] 打开失败',err);}catch(e){}
         showLaunchError(err);

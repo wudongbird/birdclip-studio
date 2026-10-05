@@ -2,6 +2,8 @@
 
 SillyTavern 第三方前端扩展。用于把聊天片段制作成书摘图片。
 
+当前版本：1.0.1（使用 SillyTavern 原生弹窗承载编辑器，改善移动端兼容性）。
+
 ## 安装
 
 1. 在 GitHub 新建公开仓库，建议命名为 `birdclip-studio`。
