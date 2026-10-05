@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.2.2';
+  const VERSION = '2.2.3';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -55,7 +55,7 @@
       format: FORMAT, schemaVersion: 1, id: 'builtin-editorial-night', name: '夜幕刊物', builtin: true,
       canvas: { width: 720, height: 1280 },
       background: { color1: '#0b1018', color2: '#171b25', angle: 145, image: '', dim: 20, grain: 12 },
-      defaultContent: { title: '未完待续', subtitle: 'NOTES FROM THE NIGHT', body: '在这里写下想留下的句子。', author: '谢承钧', source: '', watermark: 'REC / 句子存档', extra: '' },
+      defaultContent: { title: '未完待续', subtitle: 'NOTES FROM THE NIGHT', body: '在这里写下想留下的句子。', author: '', source: '', watermark: 'REC / QUOTE ARCHIVE', extra: '' },
       layers: [
         { id: 'sub', type: 'text', bind: 'subtitle', x: .09, y: .06, w: .82, size: 18, font: 'latin', color: '#b8b5b0', align: 'left', lineHeight: 1.2, letterSpacing: 3, italic: true, opacity: .55, rotate: 0 },
         { id: 'title', type: 'text', bind: 'title', x: .09, y: .15, w: .82, size: 76, font: 'serif', color: '#eeeae3', align: 'center', lineHeight: 1.15, letterSpacing: 8, weight: 400, opacity: 1, rotate: 0, shadow: { enabled: true, color: '#000000', blur: 18, x: 0, y: 8 } },
@@ -69,7 +69,7 @@
       format: FORMAT, schemaVersion: 1, id: 'builtin-paper-notes', name: '雾面书页', builtin: true,
       canvas: { width: 720, height: 1280 },
       background: { color1: '#efeae0', color2: '#faf7f0', angle: 135, image: '', dim: 0, grain: 8 },
-      defaultContent: { title: '林鸟鸟', subtitle: 'NOTES', body: '你这只刚才还上演生死大逃亡的“人质”，此刻正姿态嚣张地仰八叉躺在床上。', author: '谢承钧', source: '', watermark: '句子落下来之前', extra: '' },
+      defaultContent: { title: '页间拾句', subtitle: 'READING NOTES', body: '把喜欢的句子留在这里，让它拥有自己的版面。', author: '', source: '', watermark: 'QUOTE ARCHIVE', extra: '' },
       layers: [
         { id: 'title', type: 'text', bind: 'title', x: .13, y: .06, w: .58, size: 43, font: 'serif', color: '#3e3a34', align: 'left', lineHeight: 1.2, letterSpacing: 5, opacity: 1, rotate: 0 },
         { id: 'sub', type: 'text', bind: 'subtitle', x: .63, y: .075, w: .22, size: 13, font: 'latin', color: '#876e62', align: 'left', lineHeight: 1.2, letterSpacing: 2, opacity: .85, rotate: 0 },
@@ -84,7 +84,7 @@
       format: FORMAT, schemaVersion: 1, id: 'builtin-blue-center', name: '蓝调留白', builtin: true,
       canvas: { width: 900, height: 900 },
       background: { color1: '#0d1d2c', color2: '#152c3b', angle: 120, image: '', dim: 0, grain: 18 },
-      defaultContent: { title: '二十五年，', subtitle: 'A QUARTER OF A CENTURY', body: '四分之一世纪，\n时辰有时，也恰是\n「山历山，『空万年』。」', author: '', source: '', watermark: '', extra: '' },
+      defaultContent: { title: '蓝调留白', subtitle: 'A MOMENT IN BLUE', body: '将一段文字放在留白中央，\n让阅读慢下来。', author: '', source: '', watermark: '', extra: '' },
       layers: [
         { id: 'title', type: 'text', bind: 'title', x: .12, y: .23, w: .76, size: 55, font: 'serif', color: '#eef2f2', align: 'center', lineHeight: 1.2, letterSpacing: 6, opacity: 1, rotate: 0, shadow: { enabled: true, color: '#7ba9b7', blur: 14, x: 0, y: 0 } },
         { id: 'body', type: 'text', bind: 'body', x: .16, y: .37, w: .68, size: 31, font: 'serif', color: '#e8eeee', align: 'center', lineHeight: 1.75, letterSpacing: 2, opacity: .94, rotate: 0 },
@@ -104,6 +104,9 @@
   let dragState = null;
   let cachedSelection = '';
   let pendingExcerpt = '';
+  let filePickerActive = false;
+  let filePickerShouldRestore = false;
+  let filePickerTimer = 0;
   const imageCache = new Map();
   const registeredFonts = new Set();
 
@@ -138,6 +141,16 @@
     button.style.left = `${left}px`; button.style.top = `${Math.max(8, top)}px`; button.hidden = false;
   }
   function hideSelectionAction() { const button = $id('bc-selection-action'); if (button) button.hidden = true; }
+  function openFilePicker(id) {
+    const input = $id(id); if (!input) return; clearTimeout(filePickerTimer); filePickerActive = true; filePickerShouldRestore = !!$id('bc-panel'); saveWorkSoon();
+    try { input.click(); } catch (e) { filePickerActive = false; filePickerShouldRestore = false; showLaunchError(e); }
+  }
+  function finishFilePicker() {
+    if (!filePickerActive) return; clearTimeout(filePickerTimer);
+    filePickerTimer = setTimeout(() => { const shouldRestore = filePickerShouldRestore; filePickerActive = false; filePickerShouldRestore = false; if (shouldRestore && !$id('bc-panel')) Promise.resolve(openPanel()).catch(showLaunchError); }, 900);
+  }
+  function handlePickerReturn() { if (filePickerActive) finishFilePicker(); }
+  function handleVisibilityReturn() { if (mainDoc.visibilityState === 'visible') handlePickerReturn(); }
   function chatEntries() {
     try {
       const chat = mainWin.SillyTavern?.getContext?.()?.chat;
@@ -154,6 +167,7 @@
   function currentTextLayers() { return (work?.template?.layers || []).filter(layer => layer.type === 'text' && layer.bind); }
   function currentLayer() { return currentTextLayers().find(layer => layer.id === selectedLayerId) || currentTextLayers()[0] || null; }
   function defaultWork(template) { return { templateId: template.id, template: clone(template), values: { ...template.defaultContent }, updatedAt: Date.now() }; }
+  function contentChanges(values, defaults) { const changed = {}; Object.entries(values || {}).forEach(([key, value]) => { if (String(value ?? '') !== String(defaults?.[key] ?? '')) changed[key] = value; }); return changed; }
   function saveWorkSoon() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { try { const snapshot = clone(work); (snapshot.template.fonts || []).forEach(font => { font.data = ''; }); mainWin.localStorage.setItem(WORK_KEY, JSON.stringify(snapshot)); } catch (e) {} }, 240);
@@ -161,7 +175,11 @@
   function restoreWork() {
     try {
       const saved = JSON.parse(mainWin.localStorage.getItem(WORK_KEY) || 'null');
-      if (saved?.template?.format === FORMAT && Array.isArray(saved.template.layers)) return saved;
+      if (saved?.template?.format === FORMAT && Array.isArray(saved.template.layers)) {
+        const builtin = BUILTINS.find(template => template.id === saved.templateId || template.id === saved.template.id);
+        if (builtin) { const migrated = defaultWork(builtin); migrated.values = { ...migrated.values, ...contentChanges(saved.values, saved.template.defaultContent) }; return migrated; }
+        return saved;
+      }
     } catch (e) {}
     return defaultWork(BUILTINS[0]);
   }
@@ -261,7 +279,7 @@
     const api = popupApi();
     if (api) {
       panel.classList.add('bc-native'); nativePopupApi = api;
-      nativePopup = new api.Popup(panel, api.POPUP_TYPE.DISPLAY, '', { wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false, okButton: false, cancelButton: false, onClosing: async () => { panel.remove(); nativePopup = null; nativePopupApi = null; return true; } });
+      nativePopup = new api.Popup(panel, api.POPUP_TYPE.DISPLAY, '', { wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false, okButton: false, cancelButton: false, onClosing: async () => { if (filePickerActive) { filePickerShouldRestore = true; return false; } panel.remove(); nativePopup = null; nativePopupApi = null; return true; } });
       Promise.resolve(nativePopup.show()).catch(showLaunchError);
     } else { mainDoc.body.style.overflow = 'hidden'; }
     bindUI(); refreshAll(); const excerpt = pendingExcerpt; pendingExcerpt = ''; if (excerpt) applyExcerpt(excerpt, null, '选中段落');
@@ -275,9 +293,10 @@
     $id('bc-close').onclick = closePanel;
     $id('bc-preview-size').onclick = () => { const preview = $id('bc-panel').querySelector('.bc-preview'); const expanded = preview.classList.toggle('expanded'); $id('bc-preview-size').textContent = expanded ? '⌃' : '⛶'; $id('bc-preview-size').title = expanded ? '恢复悬停预览' : '放大预览'; };
     $id('bc-help').onclick = () => showInfo('模板包会保存画布、背景与全部文字层样式。作品文字只作为模板的默认示例；别人导入后可以直接替换。');
-    $id('bc-bg-btn').onclick = () => $id('bc-bg-file').click(); $id('bc-clear-bg').onclick = () => { work.template.background.image = ''; scheduleRender(); saveWorkSoon(); };
-    $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => $id('bc-template-file').click(); $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
-    $id('bc-font-upload').onclick = () => $id('bc-font-file').click(); $id('bc-font-file').onchange = importFontFile; $id('bc-font-remove').onclick = removeCurrentFont;
+    $id('bc-bg-btn').onclick = () => openFilePicker('bc-bg-file'); $id('bc-clear-bg').onclick = () => { work.template.background.image = ''; scheduleRender(); saveWorkSoon(); };
+    $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => openFilePicker('bc-template-file'); $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
+    $id('bc-font-upload').onclick = () => openFilePicker('bc-font-file'); $id('bc-font-file').onchange = importFontFile; $id('bc-font-remove').onclick = removeCurrentFont;
+    ['bc-bg-file', 'bc-template-file', 'bc-font-file'].forEach(id => { const input = $id(id); input.addEventListener('cancel', finishFilePicker); });
     $id('bc-new-template').onclick = newBlankTemplate; $id('bc-save-template').onclick = saveCurrentTemplate; $id('bc-export-template').onclick = exportTemplate; $id('bc-delete-template').onclick = deleteCurrentTemplate;
     $id('bc-layer-select').onchange = e => { selectedLayerId = e.target.value; fillLayerEditor(); scheduleRender(); };
     $id('bc-add-text').onclick = addTextLayer; $id('bc-remove-layer').onclick = removeCurrentLayer;
@@ -329,9 +348,7 @@
     const current = allTemplates().find(t => t.id === work.templateId); $id('bc-delete-template').hidden = !current || current.builtin;
   }
   function editedContent() {
-    const values = {}; const defaults = work?.template?.defaultContent || {};
-    Object.entries(work?.values || {}).forEach(([key, value]) => { if (String(value ?? '') !== String(defaults[key] ?? '')) values[key] = value; });
-    return values;
+    return contentChanges(work?.values, work?.template?.defaultContent);
   }
   async function useTemplate(id) {
     const template = allTemplates().find(t => t.id === id); if (!template) return; const preserved = editedContent();
@@ -403,7 +420,7 @@
   }
   async function exportTemplate() { await hydrateTemplateFonts(work.template); const t = templatePackage(work.template.name || '分享模板', false); downloadBlob(new Blob([JSON.stringify(t, null, 2)], { type: 'application/json' }), `${safeName(t.name)}.birdclip.json`); toast('模板包已导出', 'success'); }
   async function importTemplateFile(event) {
-    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
     try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
   }
   async function deleteCurrentTemplate() {
@@ -421,11 +438,11 @@
   function removeCurrentLayer() { const layer = currentLayer(); if (!layer || !mainWin.confirm(`删除文字层「${FIELD_LABELS[layer.bind] || layer.bind}」？`)) return; work.template.layers = work.template.layers.filter(x => x.id !== layer.id); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); }
 
   async function importBackground(event) {
-    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
     try { work.template.background.image = await compressImage(file); await ensureImage(work.template.background.image); scheduleRender(); saveWorkSoon(); } catch (e) { showLaunchError(e); }
   }
   async function importFontFile(event) {
-    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
     if (!/\.(ttf|otf|woff2?)$/i.test(file.name)) { toast('请选择 TTF、OTF、WOFF 或 WOFF2 字体文件', 'warning'); return; }
     if (file.size > 15 * 1024 * 1024) { toast('字体文件请控制在 15MB 以内', 'warning'); return; }
     if ((work.template.fonts || []).length >= 8) { toast('一个模板最多携带 8 个字体文件', 'warning'); return; }
@@ -531,7 +548,7 @@
     if (!item) { item = mainDoc.createElement('div'); item.id = 'bc-menu-entry'; item.className = 'list-group-item flex-container flexGap5 interactable'; item.tabIndex = 0; item.innerHTML = '<div class="fa-fw fa-solid fa-wand-magic-sparkles extensionsMenuExtensionButton"></div><span>落句排版室</span>'; menu.appendChild(item); }
     item.onclick = openFromMenu; item.dataset.bcGen = RUN_ID; return true;
   }
-  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); mainDoc.removeEventListener('selectionchange', captureSelection); closePanel(); ['bc-menu-entry', 'bc-imgpop', 'bc-selection-action'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
-  function install() { mainDoc.addEventListener('selectionchange', captureSelection); captureSelection(); ensureMenuEntry(); entryObserver = new MutationObserver(() => ensureMenuEntry()); entryObserver.observe(mainDoc.body, { childList: true, subtree: true }); entryTimer = setInterval(ensureMenuEntry, 1200); toast(`${SCRIPT_NAME} v${VERSION} 已加载`, 'success'); }
+  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); clearTimeout(filePickerTimer); mainDoc.removeEventListener('selectionchange', captureSelection); mainDoc.removeEventListener('visibilitychange', handleVisibilityReturn); mainWin.removeEventListener('focus', handlePickerReturn); closePanel(); ['bc-menu-entry', 'bc-imgpop', 'bc-selection-action'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
+  function install() { mainDoc.addEventListener('selectionchange', captureSelection); mainDoc.addEventListener('visibilitychange', handleVisibilityReturn); mainWin.addEventListener('focus', handlePickerReturn); captureSelection(); ensureMenuEntry(); entryObserver = new MutationObserver(() => ensureMenuEntry()); entryObserver.observe(mainDoc.body, { childList: true, subtree: true }); entryTimer = setInterval(ensureMenuEntry, 1200); toast(`${SCRIPT_NAME} v${VERSION} 已加载`, 'success'); }
   mainWin.__birdclipStudioCleanup = cleanup; setTimeout(install, 700);
 })();
