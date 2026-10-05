@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.4.1';
+  const VERSION = '2.5.0';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -105,6 +105,7 @@
   let work = null;
   let selectedLayerId = '';
   let selectedImageId = '';
+  let selectedCanvasType = 'text';
   let nativePopup = null;
   let nativePopupApi = null;
   let renderRaf = 0;
@@ -274,14 +275,14 @@
       <div class="bc-wrap">
         <section class="bc-preview">
           <div class="bc-canvasbox"><canvas id="bc-canvas"></canvas><button class="bc-preview-size" id="bc-preview-size" type="button" title="放大预览" aria-label="切换预览大小">⛶</button></div>
-          <div class="bc-tip">点选并拖动画布中的文字，可以直接调整位置</div>
+          <div class="bc-tip">点选并拖动画布中的文字或图片，可以直接调整位置</div>
           <div class="bc-actions"><button class="bc-btn" id="bc-bg-btn">上传背景</button><button class="bc-btn" id="bc-clear-bg">清除背景</button><button class="bc-btn primary" id="bc-export-png">导出 PNG</button></div>
         </section>
         <section class="bc-controls">
           <div class="bc-card"><div class="bc-cardhead"><h3>选择模板</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><details class="bc-subdetails"><summary>模板管理</summary><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></details></div>
           <div class="bc-card"><h3>作品文字</h3><div id="bc-content-fields"></div></div>
           <details class="bc-card"><summary>从聊天中摘录</summary><p class="bc-muted bc-clip-help">也可以回到聊天，长按选中一段后直接点“书摘”。</p><div class="bc-cardhead"><span id="bc-clip-status"></span></div><div class="bc-button-grid bc-clip-actions"><button class="bc-btn" id="bc-use-selection">上次选中的段落</button><button class="bc-btn" id="bc-use-clipboard">粘贴剪贴板</button></div><div class="bc-pick-row"><select id="bc-chat-pick" aria-label="最近聊天"></select><button class="bc-btn" id="bc-use-picked">使用整条</button></div><button id="bc-use-last-ai" hidden></button><button id="bc-use-last-user" hidden></button></details>
-          <details class="bc-card" id="bc-image-card"><summary>图片与图框</summary><div id="bc-image-empty" class="bc-muted">当前模板没有图片层，可以添加一个。</div><div id="bc-image-editor"><label>当前图片层</label><select id="bc-image-select"></select><div class="bc-button-grid bc-font-actions"><button class="bc-btn" id="bc-image-upload">替换图片</button><button class="bc-btn danger" id="bc-image-clear">清除图片</button></div><div class="bc-grid2"><div><label>填充方式</label><select id="bc-image-fit"><option value="cover">铺满裁切</option><option value="contain">完整显示</option></select></div><div><label>边缘渐隐</label><select id="bc-image-fade"><option value="none">无</option><option value="bottom">向下渐隐</option><option value="top">向上渐隐</option><option value="right">向右渐隐</option><option value="left">向左渐隐</option></select></div></div><div class="bc-rangehead"><span>水平取景</span><b id="bc-image-x-v"></b></div><input type="range" id="bc-image-x" min="0" max="100" step="1"><div class="bc-rangehead"><span>垂直取景</span><b id="bc-image-y-v"></b></div><input type="range" id="bc-image-y" min="0" max="100" step="1"><div class="bc-rangehead"><span>透明度</span><b id="bc-image-opacity-v"></b></div><input type="range" id="bc-image-opacity" min="0" max="100" step="1"><div class="bc-rangehead"><span>圆角</span><b id="bc-image-radius-v"></b></div><input type="range" id="bc-image-radius" min="0" max="80" step="1"></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-image">添加图片层</button><button class="bc-btn danger" id="bc-remove-image">删除当前图层</button></div></details>
+          <details class="bc-card" id="bc-image-card"><summary>图片与图框</summary><div id="bc-image-empty" class="bc-muted">当前模板没有图片层，可以添加一个。</div><div id="bc-image-editor"><label>当前图片层</label><select id="bc-image-select"></select><p class="bc-muted">在预览里点住图片框即可拖动位置。</p><div class="bc-button-grid bc-font-actions"><button class="bc-btn" id="bc-image-upload">替换图片</button><button class="bc-btn danger" id="bc-image-clear">清除图片</button></div><div class="bc-grid2"><div><label>填充方式</label><select id="bc-image-fit"><option value="cover">铺满裁切</option><option value="contain">完整显示</option></select></div><div><label>边缘渐隐</label><select id="bc-image-fade"><option value="none">无</option><option value="bottom">向下渐隐</option><option value="top">向上渐隐</option><option value="right">向右渐隐</option><option value="left">向左渐隐</option></select></div></div><div class="bc-rangehead"><span>图片框宽度</span><b id="bc-image-w-v"></b></div><input type="range" id="bc-image-w" min="3" max="150" step="1"><div class="bc-rangehead"><span>图片框高度</span><b id="bc-image-h-v"></b></div><input type="range" id="bc-image-h" min="3" max="150" step="1"><div class="bc-rangehead"><span>水平取景</span><b id="bc-image-x-v"></b></div><input type="range" id="bc-image-x" min="0" max="100" step="1"><div class="bc-rangehead"><span>垂直取景</span><b id="bc-image-y-v"></b></div><input type="range" id="bc-image-y" min="0" max="100" step="1"><div class="bc-rangehead"><span>透明度</span><b id="bc-image-opacity-v"></b></div><input type="range" id="bc-image-opacity" min="0" max="100" step="1"><div class="bc-rangehead"><span>圆角</span><b id="bc-image-radius-v"></b></div><input type="range" id="bc-image-radius" min="0" max="80" step="1"></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-image">添加图片层</button><button class="bc-btn danger" id="bc-remove-image">删除当前图层</button></div></details>
           <details class="bc-card"><summary>高级文字设置</summary><label>当前文字层</label><select id="bc-layer-select"></select><div id="bc-layer-editor"><div class="bc-grid2"><div><label>字体</label><select id="bc-l-font"></select></div><div><label>对齐</label><select id="bc-l-align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div></div><div class="bc-button-grid bc-font-actions"><button class="bc-btn" id="bc-font-upload">上传字体文件</button><button class="bc-btn danger" id="bc-font-remove">移除当前字体</button></div><p class="bc-muted">支持 TTF、OTF、WOFF、WOFF2；保存或导出模板后会随模板分享。</p><div class="bc-grid2"><div><label>文字颜色</label><input type="color" id="bc-l-color"></div><div><label>透明度 <b id="bc-l-opacity-v"></b></label><input type="range" id="bc-l-opacity" min="0" max="1" step="0.05"></div></div><div class="bc-palette" id="bc-text-palette" aria-label="低饱和文字色卡"></div><div class="bc-rangehead"><span>字号</span><b id="bc-l-size-v"></b></div><input type="range" id="bc-l-size" min="8" max="180" step="1"><div class="bc-rangehead"><span>文字宽度</span><b id="bc-l-width-v"></b></div><input type="range" id="bc-l-width" min="5" max="100" step="1"><div class="bc-rangehead"><span>行距</span><b id="bc-l-line-v"></b></div><input type="range" id="bc-l-line" min="0.8" max="3" step="0.05"><div class="bc-rangehead"><span>字距</span><b id="bc-l-space-v"></b></div><input type="range" id="bc-l-space" min="0" max="30" step="1"><div class="bc-rangehead"><span>旋转</span><b id="bc-l-rotate-v"></b></div><input type="range" id="bc-l-rotate" min="-45" max="45" step="1"><div class="bc-grid2"><label class="bc-check"><input type="checkbox" id="bc-l-bold">粗体</label><label class="bc-check"><input type="checkbox" id="bc-l-italic">斜体</label><label class="bc-check"><input type="checkbox" id="bc-l-stroke">描边</label><label class="bc-check"><input type="checkbox" id="bc-l-shadow">阴影</label></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-text">添加文字层</button><button class="bc-btn danger" id="bc-remove-layer">删除当前层</button></div></div></details>
           <details class="bc-card"><summary>画布与背景</summary><div class="bc-grid2"><div><label>画布宽度</label><input type="number" id="bc-canvas-w" min="320" max="2160"></div><div><label>画布高度</label><input type="number" id="bc-canvas-h" min="320" max="2160"></div></div><label>低饱和背景预设</label><div class="bc-bg-presets" id="bc-bg-presets"></div><div class="bc-grid2"><div><label>渐变颜色一</label><input type="color" id="bc-bg1"></div><div><label>渐变颜色二</label><input type="color" id="bc-bg2"></div></div><div class="bc-rangehead"><span>渐变角度</span><b id="bc-bg-angle-v"></b></div><input type="range" id="bc-bg-angle" min="0" max="360" step="1"><div class="bc-rangehead"><span>背景压暗</span><b id="bc-bg-dim-v"></b></div><input type="range" id="bc-bg-dim" min="0" max="90" step="1"><div class="bc-rangehead"><span>颗粒纹理</span><b id="bc-grain-v"></b></div><input type="range" id="bc-grain" min="0" max="40" step="1"></details>
         </section>
@@ -293,7 +294,7 @@
     closePanel();
     customTemplates = (await dbAll()).map(x => { try { return normalizeTemplate(x, false); } catch (e) { return null; } }).filter(Boolean);
     await Promise.all(customTemplates.map(template => hydrateTemplateFonts(template)));
-    work = restoreWork(); await hydrateTemplateFonts(work.template); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || '';
+    work = restoreWork(); await hydrateTemplateFonts(work.template); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedCanvasType = selectedLayerId ? 'text' : 'image';
     const panel = mainDoc.createElement('div'); panel.id = 'bc-panel'; panel.dataset.bcGen = RUN_ID; panel.innerHTML = panelHtml(); mainDoc.body.appendChild(panel);
     const api = popupApi();
     if (api) {
@@ -318,7 +319,7 @@
     $id('bc-font-upload').onclick = () => openFilePicker('bc-font-file'); $id('bc-font-file').onchange = importFontFile; $id('bc-font-remove').onclick = removeCurrentFont;
     ['bc-bg-file', 'bc-image-file', 'bc-template-file', 'bc-font-file'].forEach(id => { const input = $id(id); input.addEventListener('cancel', finishFilePicker); });
     $id('bc-new-template').onclick = newBlankTemplate; $id('bc-save-template').onclick = saveCurrentTemplate; $id('bc-export-template').onclick = exportTemplate; $id('bc-delete-template').onclick = deleteCurrentTemplate;
-    $id('bc-layer-select').onchange = e => { selectedLayerId = e.target.value; fillLayerEditor(); scheduleRender(); };
+    $id('bc-layer-select').onchange = e => { selectedLayerId = e.target.value; selectedCanvasType = 'text'; fillLayerEditor(); scheduleRender(); };
     $id('bc-add-text').onclick = addTextLayer; $id('bc-remove-layer').onclick = removeCurrentLayer;
     bindQuickExcerpt(); bindImageEditor(); bindLayerEditor(); bindBackgroundEditor(); bindCanvasDrag();
   }
@@ -354,7 +355,7 @@
     work.values[layer.bind] = text;
     const authorLayer = currentTextLayers().find(x => x.bind === 'author');
     if (message?.name && authorLayer && !String(work.values.author || '').trim()) work.values.author = String(message.name);
-    selectedLayerId = layer.id; renderContentFields(); renderLayerSelect(); fillLayerEditor(); scheduleRender(); queueRemoteFontWarm(); saveWorkSoon(); toast(`已摘录到「${FIELD_LABELS[layer.bind] || layer.bind}」`, 'success');
+    selectedLayerId = layer.id; selectedCanvasType = 'text'; renderContentFields(); renderLayerSelect(); fillLayerEditor(); scheduleRender(); queueRemoteFontWarm(); saveWorkSoon(); toast(`已摘录到「${FIELD_LABELS[layer.bind] || layer.bind}」`, 'success');
   }
 
   function renderTemplateLibrary() {
@@ -372,7 +373,7 @@
   }
   async function useTemplate(id) {
     const template = allTemplates().find(t => t.id === id); if (!template) return; const preserved = editedContent();
-    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm();
+    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedCanvasType = selectedLayerId ? 'text' : 'image'; refreshAll(); queueRemoteFontWarm();
   }
   function renderContentFields() {
     const box = $id('bc-content-fields'); box.innerHTML = ''; const binds = [...new Set(currentTextLayers().map(layer => layer.bind))];
@@ -392,6 +393,8 @@
   function fillImageEditor() {
     const layer = currentImageLayer(); if (!layer) return;
     $id('bc-image-fit').value = layer.fit === 'contain' ? 'contain' : 'cover'; $id('bc-image-fade').value = layer.fade?.edge || 'none';
+    setRange('bc-image-w', Math.round((layer.w ?? .7) * 100), 'bc-image-w-v', `${Math.round((layer.w ?? .7) * 100)}%`);
+    setRange('bc-image-h', Math.round((layer.h ?? .3) * 100), 'bc-image-h-v', `${Math.round((layer.h ?? .3) * 100)}%`);
     setRange('bc-image-x', Math.round((layer.positionX ?? .5) * 100), 'bc-image-x-v', `${Math.round((layer.positionX ?? .5) * 100)}%`);
     setRange('bc-image-y', Math.round((layer.positionY ?? .5) * 100), 'bc-image-y-v', `${Math.round((layer.positionY ?? .5) * 100)}%`);
     setRange('bc-image-opacity', Math.round((layer.opacity ?? 1) * 100), 'bc-image-opacity-v', `${Math.round((layer.opacity ?? 1) * 100)}%`);
@@ -400,21 +403,23 @@
   }
   function bindImageEditor() {
     const update = fn => { const layer = currentImageLayer(); if (!layer) return; fn(layer); fillImageEditor(); scheduleRender(); saveWorkSoon(); };
-    $id('bc-image-select').onchange = event => { selectedImageId = event.target.value; fillImageEditor(); scheduleRender(); };
+    $id('bc-image-select').onchange = event => { selectedImageId = event.target.value; selectedCanvasType = 'image'; fillImageEditor(); scheduleRender(); };
     $id('bc-image-fit').onchange = event => update(layer => layer.fit = event.target.value === 'contain' ? 'contain' : 'cover');
     $id('bc-image-fade').onchange = event => update(layer => { const edge = event.target.value; if (edge === 'none') delete layer.fade; else layer.fade = { edge, color: validColor(layer.fade?.color, work.template.background?.color1 || '#ffffff'), start: layer.fade?.start ?? .45 }; });
+    $id('bc-image-w').oninput = event => update(layer => layer.w = Number(event.target.value) / 100);
+    $id('bc-image-h').oninput = event => update(layer => layer.h = Number(event.target.value) / 100);
     $id('bc-image-x').oninput = event => update(layer => layer.positionX = Number(event.target.value) / 100);
     $id('bc-image-y').oninput = event => update(layer => layer.positionY = Number(event.target.value) / 100);
     $id('bc-image-opacity').oninput = event => update(layer => layer.opacity = Number(event.target.value) / 100);
     $id('bc-image-radius').oninput = event => update(layer => layer.radius = Number(event.target.value));
   }
   function addImageLayer() {
-    const index = currentImageLayers().length + 1; const layer = normalizeLayer({ id: `image-${Date.now().toString(36)}`, type: 'image', name: `图片 ${index}`, x: .15, y: .18, w: .7, h: .3, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8d5cf', '#eeece7'] }, work.template.layers.length);
-    work.template.layers.unshift(layer); selectedImageId = layer.id; refreshAll(); $id('bc-image-card').open = true;
+    const index = currentImageLayers().length + 1; const offset = ((index - 1) % 5) * .04; const layer = normalizeLayer({ id: `image-${Date.now().toString(36)}`, type: 'image', name: `图片 ${index}`, x: .10 + offset, y: .14 + offset, w: .7, h: .3, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8d5cf', '#eeece7'] }, work.template.layers.length);
+    work.template.layers.unshift(layer); selectedImageId = layer.id; selectedCanvasType = 'image'; refreshAll(); $id('bc-image-card').open = true;
   }
   function removeImageLayer() {
     const layer = currentImageLayer(); if (!layer || !mainWin.confirm(`删除图片层「${layer.name || layer.id}」？`)) return;
-    work.template.layers = work.template.layers.filter(item => item.id !== layer.id); selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll();
+    work.template.layers = work.template.layers.filter(item => item.id !== layer.id); selectedImageId = currentImageLayers()[0]?.id || ''; if (!selectedImageId) selectedCanvasType = 'text'; refreshAll();
   }
   async function importLayerImage(event) {
     const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return; const layer = currentImageLayer(); if (!layer) return;
@@ -469,7 +474,7 @@
   }
   async function saveCurrentTemplate() {
     const name = await askName(work.template.name || '我的模板'); if (!name) return; await hydrateTemplateFonts(work.template); const packageData = templatePackage(name, true);
-    try { await dbPut(packageData); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(packageData); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll(); toast('已保存到模板库', 'success'); } catch (e) { showLaunchError(e); }
+    try { await dbPut(packageData); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(packageData); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedCanvasType = selectedLayerId ? 'text' : 'image'; refreshAll(); toast('已保存到模板库', 'success'); } catch (e) { showLaunchError(e); }
   }
   function templatePackage(name, renewId) {
     const t = clone(work.template); t.format = FORMAT; t.schemaVersion = SCHEMA_VERSION; t.name = safeName(name || t.name);
@@ -479,21 +484,21 @@
   async function exportTemplate() { await hydrateTemplateFonts(work.template); const t = templatePackage(work.template.name || '分享模板', false); downloadBlob(new Blob([JSON.stringify(t, null, 2)], { type: 'application/json' }), `${safeName(t.name)}.birdclip.json`); toast('模板包已导出', 'success'); }
   async function importTemplateFile(event) {
     const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
-    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
+    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedCanvasType = selectedLayerId ? 'text' : 'image'; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
   }
   async function deleteCurrentTemplate() {
-    const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll();
+    const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; selectedCanvasType = selectedLayerId ? 'text' : 'image'; refreshAll();
   }
   function newBlankTemplate() {
     const preserved = editedContent();
     const t = normalizeTemplate({ format: FORMAT, schemaVersion: 1, id: `draft-${Date.now()}`, name: '空白模板', canvas: { width: 720, height: 1280 }, background: { color1: '#f4f0e8', color2: '#ffffff', angle: 135, image: '', dim: 0, grain: 5 }, defaultContent: { title: '标题', subtitle: '', body: '在这里输入正文。', author: '', source: '', watermark: '', extra: '' }, layers: [{ id: 'title', type: 'text', bind: 'title', x: .1, y: .12, w: .8, size: 58, font: 'serif', color: '#282522', align: 'center', lineHeight: 1.2, letterSpacing: 5, opacity: 1, rotate: 0 }, { id: 'body', type: 'text', bind: 'body', x: .14, y: .34, w: .72, size: 30, font: 'serif', color: '#3f3a35', align: 'left', lineHeight: 1.8, letterSpacing: 1, opacity: 1, rotate: 0 }] }, false);
-    work = defaultWork(t); work.values = { ...work.values, ...preserved }; selectedLayerId = 'body'; selectedImageId = ''; refreshAll();
+    work = defaultWork(t); work.values = { ...work.values, ...preserved }; selectedLayerId = 'body'; selectedImageId = ''; selectedCanvasType = 'text'; refreshAll();
   }
   function addTextLayer() {
     const used = new Set(currentTextLayers().map(l => l.bind)); const bind = ['title', 'subtitle', 'body', 'author', 'source', 'watermark', 'extra'].find(x => !used.has(x)) || 'extra'; const layer = normalizeLayer({ id: `text-${Date.now().toString(36)}`, type: 'text', bind, x: .15, y: .18, w: .7, size: 34, font: 'serif', color: '#333333', align: 'center', lineHeight: 1.5, letterSpacing: 1, opacity: 1, rotate: 0 }, work.template.layers.length);
-    work.template.layers.push(layer); if (!(bind in work.values)) work.values[bind] = FIELD_LABELS[bind] || '新文字'; selectedLayerId = layer.id; refreshAll();
+    work.template.layers.push(layer); if (!(bind in work.values)) work.values[bind] = FIELD_LABELS[bind] || '新文字'; selectedLayerId = layer.id; selectedCanvasType = 'text'; refreshAll();
   }
-  function removeCurrentLayer() { const layer = currentLayer(); if (!layer || !mainWin.confirm(`删除文字层「${FIELD_LABELS[layer.bind] || layer.bind}」？`)) return; work.template.layers = work.template.layers.filter(x => x.id !== layer.id); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); }
+  function removeCurrentLayer() { const layer = currentLayer(); if (!layer || !mainWin.confirm(`删除文字层「${FIELD_LABELS[layer.bind] || layer.bind}」？`)) return; work.template.layers = work.template.layers.filter(x => x.id !== layer.id); selectedLayerId = currentTextLayers()[0]?.id || ''; if (!selectedLayerId && selectedImageId) selectedCanvasType = 'image'; refreshAll(); }
 
   async function importBackground(event) {
     const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
@@ -565,7 +570,7 @@
     const W = template.canvas.width; const H = template.canvas.height;
     if (thumbnail) { canvas.width = 252; canvas.height = Math.max(180, Math.round(252 * H / W)); } else { canvas.width = W; canvas.height = H; }
     const ctx = canvas.getContext('2d'); const sx = canvas.width / W; const sy = canvas.height / H; ctx.save(); ctx.scale(sx, sy); drawBackground(ctx, template, W, H); const bounds = [];
-    for (const layer of template.layers) { if (layer.type === 'text') drawTextLayer(ctx, layer, values, W, H, bounds, template); else if (layer.type === 'image') drawImageLayer(ctx, layer, W, H); else if (layer.type === 'line') drawLine(ctx, layer, W, H); else if (layer.type === 'rect') drawRect(ctx, layer, W, H); }
+    for (const layer of template.layers) { if (layer.type === 'text') drawTextLayer(ctx, layer, values, W, H, bounds, template); else if (layer.type === 'image') drawImageLayer(ctx, layer, W, H, bounds); else if (layer.type === 'line') drawLine(ctx, layer, W, H); else if (layer.type === 'rect') drawRect(ctx, layer, W, H); }
     drawGrain(ctx, template.background.grain || 0, W, H); ctx.restore(); if (interactive) { layerBounds = bounds; drawSelection(canvas, template, W, H); }
     const pendingImages = [template.background.image, ...template.layers.filter(layer => layer.type === 'image').map(layer => layer.src)].filter(src => src && !imageCache.has(src));
     if (pendingImages.length) Promise.all(pendingImages.map(ensureImage)).then(() => thumbnail ? renderTemplateCanvas(canvas, template, values, true) : scheduleRender());
@@ -579,7 +584,7 @@
   function roundedRectPath(ctx, x, y, w, h, radius) {
     const r = Math.min(Math.max(0, radius || 0), w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
   }
-  function drawImageLayer(ctx, layer, W, H) {
+  function drawImageLayer(ctx, layer, W, H, bounds) {
     const x = layer.x * W, y = layer.y * H, width = layer.w * W, height = layer.h * H; if (width <= 0 || height <= 0) return;
     ctx.save(); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); roundedRectPath(ctx, x, y, width, height, Number(layer.radius || 0)); ctx.clip();
     const colors = Array.isArray(layer.placeholder) ? layer.placeholder : ['#d8d5cf', '#eeece7']; const placeholder = ctx.createLinearGradient(x, y, x + width, y + height); placeholder.addColorStop(0, validColor(colors[0], '#d8d5cf')); placeholder.addColorStop(1, validColor(colors[1], '#eeece7')); ctx.fillStyle = placeholder; ctx.fillRect(x, y, width, height);
@@ -591,7 +596,7 @@
       const edge = layer.fade.edge; let gradient; if (edge === 'top') gradient = ctx.createLinearGradient(x, y + height, x, y); else if (edge === 'left') gradient = ctx.createLinearGradient(x + width, y, x, y); else if (edge === 'right') gradient = ctx.createLinearGradient(x, y, x + width, y); else gradient = ctx.createLinearGradient(x, y, x, y + height);
       const start = clamp(layer.fade.start ?? .5, 0, .95); gradient.addColorStop(0, colorAlpha(layer.fade.color, 0)); gradient.addColorStop(start, colorAlpha(layer.fade.color, 0)); gradient.addColorStop(1, colorAlpha(layer.fade.color, 1)); ctx.fillStyle = gradient; ctx.fillRect(x, y, width, height);
     }
-    ctx.restore();
+    ctx.restore(); bounds?.push({ id: layer.id, type: 'image', x, y, w: width, h: height });
   }
   function drawTextLayer(ctx, layer, values, W, H, bounds, template) {
     const text = String(layer.bind ? values[layer.bind] ?? '' : layer.text ?? ''); if (!text) return;
@@ -600,7 +605,7 @@
     if (layer.shadow?.enabled) { ctx.shadowColor = layer.shadow.color || '#000000'; ctx.shadowBlur = Number(layer.shadow.blur || 12) * scale; ctx.shadowOffsetX = Number(layer.shadow.x || 0) * scale; ctx.shadowOffsetY = Number(layer.shadow.y || 4) * scale; }
     const lines = wrapText(ctx, text, width, spacing); let py = y;
     lines.forEach(line => { const lineWidth = measureSpaced(ctx, line, spacing); let px = x; if (layer.align === 'center') px += (width - lineWidth) / 2; else if (layer.align === 'right') px += width - lineWidth; drawSpaced(ctx, line, px, py, spacing, layer); py += lineHeight; });
-    ctx.restore(); bounds.push({ id: layer.id, x, y, w: width, h: Math.max(lineHeight, lines.length * lineHeight) });
+    ctx.restore(); bounds.push({ id: layer.id, type: 'text', x, y, w: width, h: Math.max(lineHeight, lines.length * lineHeight) });
   }
   function drawSpaced(ctx, text, x, y, spacing, layer) {
     let px = x; ctx.fillStyle = validColor(layer.color, '#222222');
@@ -613,11 +618,11 @@
   function drawLine(ctx, layer, W, H) { ctx.save(); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); ctx.strokeStyle = validColor(layer.color, '#777777'); ctx.lineWidth = Number(layer.width || 1); ctx.beginPath(); ctx.moveTo(layer.x1 * W, layer.y1 * H); ctx.lineTo(layer.x2 * W, layer.y2 * H); ctx.stroke(); ctx.restore(); }
   function drawRect(ctx, layer, W, H) { ctx.save(); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); if (layer.fill) { ctx.fillStyle = validColor(layer.fill, '#ffffff'); ctx.fillRect(layer.x * W, layer.y * H, layer.w * W, layer.h * H); } if (layer.color) { ctx.strokeStyle = validColor(layer.color, '#777777'); ctx.lineWidth = Number(layer.width || 1); ctx.strokeRect(layer.x * W, layer.y * H, layer.w * W, layer.h * H); } ctx.restore(); }
   function drawGrain(ctx, amount, W, H) { const count = Math.round(clamp(amount, 0, 40) * W * H / 26000); ctx.save(); for (let i = 0; i < count; i++) { const x = (i * 97 % 997) / 997 * W, y = (i * 193 % 991) / 991 * H; ctx.fillStyle = `rgba(255,255,255,${.012 + (i % 4) * .004})`; ctx.fillRect(x, y, 1 + i % 2, 1 + i % 2); } ctx.restore(); }
-  function drawSelection(canvas, template, W, H) { const bound = layerBounds.find(x => x.id === selectedLayerId); if (!bound) return; const ctx = canvas.getContext('2d'); const sx = canvas.width / W, sy = canvas.height / H; ctx.save(); ctx.scale(sx, sy); ctx.strokeStyle = 'rgba(198,54,88,.75)'; ctx.lineWidth = 1.5 / sx; ctx.setLineDash([7 / sx, 5 / sx]); ctx.strokeRect(bound.x, bound.y, bound.w, bound.h); ctx.restore(); }
+  function drawSelection(canvas, template, W, H) { const selectedId = selectedCanvasType === 'image' ? selectedImageId : selectedLayerId; const bound = layerBounds.find(x => x.type === selectedCanvasType && x.id === selectedId); if (!bound) return; const ctx = canvas.getContext('2d'); const sx = canvas.width / W, sy = canvas.height / H; ctx.save(); ctx.scale(sx, sy); ctx.strokeStyle = 'rgba(198,54,88,.82)'; ctx.lineWidth = 1.5 / sx; ctx.setLineDash([7 / sx, 5 / sx]); ctx.strokeRect(bound.x, bound.y, bound.w, bound.h); ctx.restore(); }
   function bindCanvasDrag() {
     const canvas = $id('bc-canvas');
-    canvas.addEventListener('pointerdown', event => { const point = canvasPoint(event, canvas); const hit = [...layerBounds].reverse().find(b => point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h); if (!hit) return; selectedLayerId = hit.id; renderLayerSelect(); fillLayerEditor(); const layer = currentLayer(); dragState = { pointerId: event.pointerId, dx: point.x - layer.x * work.template.canvas.width, dy: point.y - layer.y * work.template.canvas.height }; canvas.setPointerCapture?.(event.pointerId); event.preventDefault(); scheduleRender(); });
-    canvas.addEventListener('pointermove', event => { if (!dragState || dragState.pointerId !== event.pointerId) return; const point = canvasPoint(event, canvas); const layer = currentLayer(); const W = work.template.canvas.width, H = work.template.canvas.height; layer.x = clamp((point.x - dragState.dx) / W, -.3, 1.3); layer.y = clamp((point.y - dragState.dy) / H, -.3, 1.3); scheduleRender(); saveWorkSoon(); event.preventDefault(); });
+    canvas.addEventListener('pointerdown', event => { const point = canvasPoint(event, canvas); const hits = [...layerBounds].reverse().filter(b => point.x >= b.x && point.x <= b.x + b.w && point.y >= b.y && point.y <= b.y + b.h); const activeId = selectedCanvasType === 'image' ? selectedImageId : selectedLayerId; const hit = hits.find(item => item.type === selectedCanvasType && item.id === activeId) || hits.find(item => item.type === selectedCanvasType) || hits[0]; if (!hit) return; selectedCanvasType = hit.type; if (hit.type === 'image') { selectedImageId = hit.id; renderImageLayerSelect(); fillImageEditor(); $id('bc-image-card').open = true; } else { selectedLayerId = hit.id; renderLayerSelect(); fillLayerEditor(); } const layer = work.template.layers.find(item => item.id === hit.id && item.type === hit.type); if (!layer) return; dragState = { pointerId: event.pointerId, id: hit.id, type: hit.type, dx: point.x - layer.x * work.template.canvas.width, dy: point.y - layer.y * work.template.canvas.height }; canvas.setPointerCapture?.(event.pointerId); event.preventDefault(); scheduleRender(); });
+    canvas.addEventListener('pointermove', event => { if (!dragState || dragState.pointerId !== event.pointerId) return; const point = canvasPoint(event, canvas); const layer = work.template.layers.find(item => item.id === dragState.id && item.type === dragState.type); if (!layer) return; const W = work.template.canvas.width, H = work.template.canvas.height; layer.x = clamp((point.x - dragState.dx) / W, -.3, 1.3); layer.y = clamp((point.y - dragState.dy) / H, -.3, 1.3); scheduleRender(); saveWorkSoon(); event.preventDefault(); });
     const end = event => { if (dragState?.pointerId === event.pointerId) dragState = null; }; canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
   }
   function canvasPoint(event, canvas) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left) * canvas.width / rect.width, y: (event.clientY - rect.top) * canvas.height / rect.height }; }
