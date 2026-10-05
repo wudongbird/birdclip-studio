@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.3.0';
+  const VERSION = '2.4.0';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -99,11 +99,82 @@
         { id: 'sub', type: 'text', bind: 'subtitle', x: .18, y: .75, w: .64, size: 15, font: 'latin', color: '#9ebac3', align: 'center', lineHeight: 1.2, letterSpacing: 4, opacity: .62, rotate: 0 },
       ],
     },
+    {
+      format: FORMAT, schemaVersion: 1, id: 'builtin-zine-triptych', name: '三页刊物', builtin: true,
+      canvas: { width: 900, height: 1200 },
+      background: { color1: '#e9e6df', color2: '#f6f3ed', angle: 150, image: '', dim: 0, grain: 16 },
+      defaultContent: { title: '纸上三幕', subtitle: 'THREE NOTES / ZINE', body: '第一段文字放在这里。适合短句、片段或一个安静的开场。', author: '第三页 · 尾声', source: '第二页 · 过场', watermark: 'VOL. 01', extra: '第二段文字可以与前文呼应，也可以保留另一种情绪。' },
+      layers: [
+        { id: 'zine-title', type: 'text', bind: 'title', x: .08, y: .07, w: .84, size: 57, font: 'sourceHanSerif', color: '#191817', align: 'center', lineHeight: 1.15, letterSpacing: 5, weight: 700, opacity: 1, rotate: 0 },
+        { id: 'zine-sub', type: 'text', bind: 'subtitle', x: .17, y: .145, w: .66, size: 17, font: 'latin', color: '#56524d', align: 'center', lineHeight: 1.2, letterSpacing: 4, opacity: .78, rotate: 0 },
+        { id: 'zine-rule', type: 'line', x1: .35, y1: .205, x2: .65, y2: .205, color: '#736d65', width: 1, opacity: .55 },
+        { id: 'zine-card-a', type: 'rect', x: .035, y: .30, w: .29, h: .62, fill: '#f7f5ef', color: '#cbc5bc', width: 1, opacity: .96 },
+        { id: 'zine-card-b', type: 'rect', x: .355, y: .265, w: .29, h: .68, fill: '#17201c', color: '#2f3833', width: 1, opacity: 1 },
+        { id: 'zine-card-c', type: 'rect', x: .675, y: .30, w: .29, h: .62, fill: '#faf8f2', color: '#cbc5bc', width: 1, opacity: .96 },
+        { id: 'zine-image-a', type: 'image', name: '左栏图片', x: .035, y: .30, w: .29, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8dce0', '#eef0ed'] },
+        { id: 'zine-image-b', type: 'image', name: '中栏图片', x: .355, y: .265, w: .29, h: .38, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#15241f', '#344139'] },
+        { id: 'zine-image-c', type: 'image', name: '右栏图片', x: .675, y: .30, w: .29, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#adbcc2', '#e4e1d9'] },
+        { id: 'zine-body-a', type: 'text', bind: 'body', x: .06, y: .56, w: .24, size: 15, font: 'sourceHanSerif', color: '#4d4944', align: 'left', lineHeight: 1.75, letterSpacing: .4, opacity: .95, rotate: 0 },
+        { id: 'zine-mark-b', type: 'text', bind: 'source', x: .385, y: .69, w: .23, size: 22, font: 'wenkai', color: '#eeebe3', align: 'center', lineHeight: 1.25, letterSpacing: 3, opacity: .95, rotate: 0 },
+        { id: 'zine-body-b', type: 'text', bind: 'extra', x: .385, y: .75, w: .23, size: 14, font: 'sourceHanSerif', color: '#d7d5cf', align: 'left', lineHeight: 1.7, letterSpacing: .4, opacity: .88, rotate: 0 },
+        { id: 'zine-mark-c', type: 'text', bind: 'author', x: .70, y: .55, w: .24, size: 21, font: 'wenkai', color: '#394752', align: 'left', lineHeight: 1.25, letterSpacing: 2, opacity: .95, rotate: 0 },
+        { id: 'zine-vol', type: 'text', bind: 'watermark', x: .72, y: .86, w: .20, size: 12, font: 'latin', color: '#8a8379', align: 'right', lineHeight: 1.2, letterSpacing: 2, opacity: .7, rotate: 0 },
+      ],
+    },
+    {
+      format: FORMAT, schemaVersion: 1, id: 'builtin-crimson-fragment', name: '绯色残章', builtin: true,
+      canvas: { width: 720, height: 1080 },
+      background: { color1: '#8f1118', color2: '#a31b1f', angle: 160, image: '', dim: 0, grain: 8 },
+      defaultContent: { title: '风从旧页吹来', subtitle: '一\n纸\n旧\n梦', body: '推开虚掩的门，风便把尘封许久的气味一并送来。那些没有说完的话停在纸页之间，像迟迟不肯落下的一场雨。\n\n我在昏暗里辨认旧日留下的痕迹，也终于明白，有些告别并不会随着时间消失。', author: '—— 摘录', source: '', watermark: '旧页 / 01', extra: '' },
+      layers: [
+        { id: 'crimson-image', type: 'image', name: '顶部横图', x: .31, y: .10, w: .76, h: .28, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d9d1cc', '#8d2930'], fade: { edge: 'bottom', color: '#99191d', start: .42 } },
+        { id: 'crimson-title', type: 'text', bind: 'title', x: .50, y: .035, w: .70, size: 50, font: 'zhuque', color: '#f6eee7', align: 'left', lineHeight: 1.15, letterSpacing: 3, weight: 700, opacity: 1, rotate: 0 },
+        { id: 'crimson-vertical', type: 'text', bind: 'subtitle', x: .07, y: .08, w: .16, size: 36, font: 'wenkai', color: '#f7eee6', align: 'center', lineHeight: 1.15, letterSpacing: 1, opacity: .92, rotate: 0 },
+        { id: 'crimson-mark', type: 'text', bind: 'watermark', x: .245, y: .18, w: .08, size: 16, font: 'wenkai', color: '#f0d8cf', align: 'center', lineHeight: 1.5, letterSpacing: 1, opacity: .85, rotate: 90 },
+        { id: 'crimson-rule', type: 'line', x1: .50, y1: .09, x2: .98, y2: .09, color: '#f5e9df', width: 2, opacity: .9 },
+        { id: 'crimson-body', type: 'text', bind: 'body', x: .055, y: .43, w: .89, size: 24, font: 'sourceHanSerif', color: '#fff6ed', align: 'left', lineHeight: 1.72, letterSpacing: .5, opacity: .98, rotate: 0 },
+        { id: 'crimson-author', type: 'text', bind: 'author', x: .59, y: .925, w: .34, size: 15, font: 'wenkai', color: '#f3dcd2', align: 'right', lineHeight: 1.2, letterSpacing: 2, opacity: .8, rotate: 0 },
+      ],
+    },
+    {
+      format: FORMAT, schemaVersion: 1, id: 'builtin-frost-letter', name: '霜枝手记', builtin: true,
+      canvas: { width: 720, height: 920 },
+      background: { color1: '#f4f3ef', color2: '#faf9f5', angle: 145, image: '', dim: 0, grain: 20 },
+      defaultContent: { title: '一年 · 心里起了一场雪', subtitle: '如果我不曾问过你的姓名', body: '雁阵远走高飞时，仍旧会想起未曾寄出的信。这样的冬天仿佛总会成为旧梦的一部分。', author: '希望来年仍有回音', source: '后来再没有寻到那一点留念的踪迹。日子又冷一天，等到雪慢慢照亮长夜。', watermark: '冬日手记', extra: '温暖如同呼唤\n只是想起你的名字' },
+      layers: [
+        { id: 'frost-top-image', type: 'image', name: '顶部淡图', x: 0, y: 0, w: .54, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: .30, radius: 0, placeholder: ['#d9e1e7', '#f6f4ef'], fade: { edge: 'right', color: '#f7f6f2', start: .35 } },
+        { id: 'frost-title', type: 'text', bind: 'title', x: .62, y: .13, w: .34, size: 14, font: 'wenkai', color: '#55575a', align: 'center', lineHeight: 1.4, letterSpacing: 1, opacity: .9, rotate: 0 },
+        { id: 'frost-sub', type: 'text', bind: 'subtitle', x: .62, y: .17, w: .34, size: 13, font: 'wenkai', color: '#77797b', align: 'center', lineHeight: 1.3, letterSpacing: .5, opacity: .8, rotate: 0 },
+        { id: 'frost-body', type: 'text', bind: 'body', x: .16, y: .27, w: .76, size: 23, font: 'sourceHanSerif', color: '#25282b', align: 'center', lineHeight: 1.55, letterSpacing: .4, weight: 700, opacity: .96, rotate: 0 },
+        { id: 'frost-main-image', type: 'image', name: '中部主图', x: 0, y: .44, w: .64, h: .22, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#b7c9dc', '#edf1f3'] },
+        { id: 'frost-extra', type: 'text', bind: 'extra', x: .43, y: .47, w: .53, size: 34, font: 'wenkai', color: '#f7f5ee', align: 'center', lineHeight: 1.35, letterSpacing: 1, weight: 700, opacity: 1, rotate: 0, stroke: { enabled: true, color: '#30343b', width: 4 }, shadow: { enabled: true, color: '#ffffff', blur: 3, x: 0, y: 0 } },
+        { id: 'frost-source', type: 'text', bind: 'source', x: .08, y: .70, w: .84, size: 20, font: 'sourceHanSerif', color: '#333638', align: 'center', lineHeight: 1.55, letterSpacing: .5, weight: 700, opacity: .95, rotate: 0 },
+        { id: 'frost-author', type: 'text', bind: 'author', x: .08, y: .87, w: .72, size: 17, font: 'wenkai', color: '#777b7e', align: 'left', lineHeight: 1.4, letterSpacing: .7, opacity: .85, rotate: 0 },
+        { id: 'frost-quote', type: 'text', text: '”', x: .73, y: .82, w: .12, size: 55, font: 'serif', color: '#111111', align: 'center', lineHeight: 1, letterSpacing: 0, opacity: 1, rotate: 0 },
+      ],
+    },
+    {
+      format: FORMAT, schemaVersion: 1, id: 'builtin-white-vermilion', name: '白页朱印', builtin: true,
+      canvas: { width: 720, height: 940 },
+      background: { color1: '#fbfbfa', color2: '#f4f4f1', angle: 90, image: '', dim: 0, grain: 5 },
+      defaultContent: { title: '相望', subtitle: '故事到这里，仍未写完。', body: '曾经有流言辗转于我们之间。\n\n人以目光辨认世界，以言语留下证词，而记忆常常比事实更接近一场漫长的梦。后来我再想起那天，最先浮现的仍是没有说出口的话。', author: '//: QUOTE ARCHIVE', source: '', watermark: '神鬼该死，拜我无用。', extra: '' },
+      layers: [
+        { id: 'vermilion-block', type: 'rect', x: .55, y: .15, w: .62, h: .17, fill: '#6f0010', opacity: 1 },
+        { id: 'vermilion-ghost', type: 'text', bind: 'title', x: .86, y: -.02, w: .36, size: 112, font: 'zhuque', color: '#d8d8d5', align: 'left', lineHeight: .95, letterSpacing: -4, weight: 700, opacity: .8, rotate: 0 },
+        { id: 'vermilion-title', type: 'text', bind: 'title', x: .86, y: .155, w: .36, size: 100, font: 'zhuque', color: '#f2eeea', align: 'left', lineHeight: .95, letterSpacing: -3, weight: 700, opacity: 1, rotate: 0 },
+        { id: 'vermilion-mark', type: 'text', bind: 'watermark', x: .42, y: .335, w: .57, size: 13, font: 'sourceHanSerif', color: '#5d5d5b', align: 'center', lineHeight: 1.2, letterSpacing: 12, opacity: .85, rotate: 0 },
+        { id: 'vermilion-author', type: 'text', bind: 'author', x: .69, y: .39, w: .28, size: 13, font: 'latin', color: '#c7c7c4', align: 'right', lineHeight: 1.2, letterSpacing: 1, italic: true, opacity: .75, rotate: 0 },
+        { id: 'vermilion-sub', type: 'text', bind: 'subtitle', x: .05, y: .51, w: .86, size: 20, font: 'sourceHanSerif', color: '#4c4c4a', align: 'left', lineHeight: 1.5, letterSpacing: .8, opacity: .92, rotate: 0 },
+        { id: 'vermilion-body', type: 'text', bind: 'body', x: .05, y: .59, w: .88, size: 21, font: 'sourceHanSerif', color: '#454543', align: 'left', lineHeight: 1.65, letterSpacing: .4, opacity: .92, rotate: 0 },
+        { id: 'vermilion-foot', type: 'line', x1: .44, y1: .91, x2: .56, y2: .91, color: '#60605e', width: 1.5, opacity: .8 },
+      ],
+    },
   ];
 
   let customTemplates = [];
   let work = null;
   let selectedLayerId = '';
+  let selectedImageId = '';
   let nativePopup = null;
   let nativePopupApi = null;
   let renderRaf = 0;
@@ -174,7 +245,9 @@
   }
   function allTemplates() { return [...BUILTINS, ...customTemplates]; }
   function currentTextLayers() { return (work?.template?.layers || []).filter(layer => layer.type === 'text' && layer.bind); }
+  function currentImageLayers() { return (work?.template?.layers || []).filter(layer => layer.type === 'image'); }
   function currentLayer() { return currentTextLayers().find(layer => layer.id === selectedLayerId) || currentTextLayers()[0] || null; }
+  function currentImageLayer() { return currentImageLayers().find(layer => layer.id === selectedImageId) || currentImageLayers()[0] || null; }
   function defaultWork(template) { return { templateId: template.id, template: clone(template), values: { ...template.defaultContent }, updatedAt: Date.now() }; }
   function contentChanges(values, defaults) { const changed = {}; Object.entries(values || {}).forEach(([key, value]) => { if (String(value ?? '') !== String(defaults?.[key] ?? '')) changed[key] = value; }); return changed; }
   function saveWorkSoon() {
@@ -252,10 +325,16 @@
     t.format = FORMAT; t.schemaVersion = SCHEMA_VERSION; return t;
   }
   function normalizeLayer(layer, index) {
-    const x = { ...layer, id: String(layer.id || `layer-${index}`), type: layer.type === 'line' || layer.type === 'rect' ? layer.type : 'text' };
+    const allowed = ['text', 'line', 'rect', 'image'];
+    const x = { ...layer, id: String(layer.id || `layer-${index}`), type: allowed.includes(layer.type) ? layer.type : 'text' };
     if (x.type === 'text') {
       Object.assign(x, { x: .1, y: .1, w: .8, size: 32, font: 'serif', color: '#222222', align: 'left', lineHeight: 1.6, letterSpacing: 0, opacity: 1, rotate: 0, weight: 400, italic: false }, layer);
       x.x = clamp(x.x, -.5, 1.5); x.y = clamp(x.y, -.5, 1.5); x.w = clamp(x.w, .05, 1.5); x.size = clamp(x.size, 8, 320); x.opacity = clamp(x.opacity, 0, 1); x.rotate = clamp(x.rotate, -180, 180);
+    } else if (x.type === 'image') {
+      Object.assign(x, { name: `图片 ${index + 1}`, x: .1, y: .1, w: .8, h: .3, src: '', fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8d5cf', '#eeece7'] }, layer);
+      x.name = String(x.name || `图片 ${index + 1}`).slice(0, 40); x.src = String(x.src || ''); x.fit = x.fit === 'contain' ? 'contain' : 'cover'; x.x = clamp(x.x, -.5, 1.5); x.y = clamp(x.y, -.5, 1.5); x.w = clamp(x.w, .03, 1.5); x.h = clamp(x.h, .03, 1.5); x.positionX = clamp(x.positionX ?? .5, 0, 1); x.positionY = clamp(x.positionY ?? .5, 0, 1); x.opacity = clamp(x.opacity ?? 1, 0, 1); x.radius = clamp(x.radius || 0, 0, 200);
+      if (!Array.isArray(x.placeholder) || x.placeholder.length < 2) x.placeholder = ['#d8d5cf', '#eeece7'];
+      if (x.fade) x.fade = { edge: ['top', 'bottom', 'left', 'right'].includes(x.fade.edge) ? x.fade.edge : 'bottom', color: validColor(x.fade.color, '#ffffff'), start: clamp(x.fade.start ?? .5, 0, .95) };
     }
     return x;
   }
@@ -272,18 +351,19 @@
           <div class="bc-card"><div class="bc-cardhead"><h3>选择模板</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><details class="bc-subdetails"><summary>模板管理</summary><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></details></div>
           <div class="bc-card"><h3>作品文字</h3><div id="bc-content-fields"></div></div>
           <details class="bc-card"><summary>从聊天中摘录</summary><p class="bc-muted bc-clip-help">也可以回到聊天，长按选中一段后直接点“书摘”。</p><div class="bc-cardhead"><span id="bc-clip-status"></span></div><div class="bc-button-grid bc-clip-actions"><button class="bc-btn" id="bc-use-selection">上次选中的段落</button><button class="bc-btn" id="bc-use-clipboard">粘贴剪贴板</button></div><div class="bc-pick-row"><select id="bc-chat-pick" aria-label="最近聊天"></select><button class="bc-btn" id="bc-use-picked">使用整条</button></div><button id="bc-use-last-ai" hidden></button><button id="bc-use-last-user" hidden></button></details>
+          <details class="bc-card" id="bc-image-card"><summary>图片与图框</summary><div id="bc-image-empty" class="bc-muted">当前模板没有图片层，可以添加一个。</div><div id="bc-image-editor"><label>当前图片层</label><select id="bc-image-select"></select><div class="bc-button-grid bc-font-actions"><button class="bc-btn" id="bc-image-upload">替换图片</button><button class="bc-btn danger" id="bc-image-clear">清除图片</button></div><div class="bc-grid2"><div><label>填充方式</label><select id="bc-image-fit"><option value="cover">铺满裁切</option><option value="contain">完整显示</option></select></div><div><label>边缘渐隐</label><select id="bc-image-fade"><option value="none">无</option><option value="bottom">向下渐隐</option><option value="top">向上渐隐</option><option value="right">向右渐隐</option><option value="left">向左渐隐</option></select></div></div><div class="bc-rangehead"><span>水平取景</span><b id="bc-image-x-v"></b></div><input type="range" id="bc-image-x" min="0" max="100" step="1"><div class="bc-rangehead"><span>垂直取景</span><b id="bc-image-y-v"></b></div><input type="range" id="bc-image-y" min="0" max="100" step="1"><div class="bc-rangehead"><span>透明度</span><b id="bc-image-opacity-v"></b></div><input type="range" id="bc-image-opacity" min="0" max="100" step="1"><div class="bc-rangehead"><span>圆角</span><b id="bc-image-radius-v"></b></div><input type="range" id="bc-image-radius" min="0" max="80" step="1"></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-image">添加图片层</button><button class="bc-btn danger" id="bc-remove-image">删除当前图层</button></div></details>
           <details class="bc-card"><summary>高级文字设置</summary><label>当前文字层</label><select id="bc-layer-select"></select><div id="bc-layer-editor"><div class="bc-grid2"><div><label>字体</label><select id="bc-l-font"></select></div><div><label>对齐</label><select id="bc-l-align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div></div><div class="bc-button-grid bc-font-actions"><button class="bc-btn" id="bc-font-upload">上传字体文件</button><button class="bc-btn danger" id="bc-font-remove">移除当前字体</button></div><p class="bc-muted">支持 TTF、OTF、WOFF、WOFF2；保存或导出模板后会随模板分享。</p><div class="bc-grid2"><div><label>文字颜色</label><input type="color" id="bc-l-color"></div><div><label>透明度 <b id="bc-l-opacity-v"></b></label><input type="range" id="bc-l-opacity" min="0" max="1" step="0.05"></div></div><div class="bc-palette" id="bc-text-palette" aria-label="低饱和文字色卡"></div><div class="bc-rangehead"><span>字号</span><b id="bc-l-size-v"></b></div><input type="range" id="bc-l-size" min="8" max="180" step="1"><div class="bc-rangehead"><span>文字宽度</span><b id="bc-l-width-v"></b></div><input type="range" id="bc-l-width" min="5" max="100" step="1"><div class="bc-rangehead"><span>行距</span><b id="bc-l-line-v"></b></div><input type="range" id="bc-l-line" min="0.8" max="3" step="0.05"><div class="bc-rangehead"><span>字距</span><b id="bc-l-space-v"></b></div><input type="range" id="bc-l-space" min="0" max="30" step="1"><div class="bc-rangehead"><span>旋转</span><b id="bc-l-rotate-v"></b></div><input type="range" id="bc-l-rotate" min="-45" max="45" step="1"><div class="bc-grid2"><label class="bc-check"><input type="checkbox" id="bc-l-bold">粗体</label><label class="bc-check"><input type="checkbox" id="bc-l-italic">斜体</label><label class="bc-check"><input type="checkbox" id="bc-l-stroke">描边</label><label class="bc-check"><input type="checkbox" id="bc-l-shadow">阴影</label></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-text">添加文字层</button><button class="bc-btn danger" id="bc-remove-layer">删除当前层</button></div></div></details>
           <details class="bc-card"><summary>画布与背景</summary><div class="bc-grid2"><div><label>画布宽度</label><input type="number" id="bc-canvas-w" min="320" max="2160"></div><div><label>画布高度</label><input type="number" id="bc-canvas-h" min="320" max="2160"></div></div><label>低饱和背景预设</label><div class="bc-bg-presets" id="bc-bg-presets"></div><div class="bc-grid2"><div><label>渐变颜色一</label><input type="color" id="bc-bg1"></div><div><label>渐变颜色二</label><input type="color" id="bc-bg2"></div></div><div class="bc-rangehead"><span>渐变角度</span><b id="bc-bg-angle-v"></b></div><input type="range" id="bc-bg-angle" min="0" max="360" step="1"><div class="bc-rangehead"><span>背景压暗</span><b id="bc-bg-dim-v"></b></div><input type="range" id="bc-bg-dim" min="0" max="90" step="1"><div class="bc-rangehead"><span>颗粒纹理</span><b id="bc-grain-v"></b></div><input type="range" id="bc-grain" min="0" max="40" step="1"></details>
         </section>
       </div>
-      <input id="bc-bg-file" type="file" accept="image/*" hidden><input id="bc-template-file" type="file" accept="application/json,.json,.birdclip" hidden><input id="bc-font-file" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden>`;
+      <input id="bc-bg-file" type="file" accept="image/*" hidden><input id="bc-image-file" type="file" accept="image/*" hidden><input id="bc-template-file" type="file" accept="application/json,.json,.birdclip" hidden><input id="bc-font-file" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden>`;
   }
 
   async function openPanel() {
     closePanel();
     customTemplates = (await dbAll()).map(x => { try { return normalizeTemplate(x, false); } catch (e) { return null; } }).filter(Boolean);
     await Promise.all(customTemplates.map(template => hydrateTemplateFonts(template)));
-    work = restoreWork(); await hydrateTemplateFonts(work.template); selectedLayerId = currentTextLayers()[0]?.id || '';
+    work = restoreWork(); await hydrateTemplateFonts(work.template); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || '';
     const panel = mainDoc.createElement('div'); panel.id = 'bc-panel'; panel.dataset.bcGen = RUN_ID; panel.innerHTML = panelHtml(); mainDoc.body.appendChild(panel);
     const api = popupApi();
     if (api) {
@@ -304,14 +384,15 @@
     $id('bc-help').onclick = () => showInfo('模板包会保存画布、背景与全部文字层样式。作品文字只作为模板的默认示例；别人导入后可以直接替换。');
     $id('bc-bg-btn').onclick = () => openFilePicker('bc-bg-file'); $id('bc-clear-bg').onclick = () => { work.template.background.image = ''; scheduleRender(); saveWorkSoon(); };
     $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => openFilePicker('bc-template-file'); $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
+    $id('bc-image-upload').onclick = () => openFilePicker('bc-image-file'); $id('bc-image-file').onchange = importLayerImage; $id('bc-image-clear').onclick = clearLayerImage; $id('bc-add-image').onclick = addImageLayer; $id('bc-remove-image').onclick = removeImageLayer;
     $id('bc-font-upload').onclick = () => openFilePicker('bc-font-file'); $id('bc-font-file').onchange = importFontFile; $id('bc-font-remove').onclick = removeCurrentFont;
-    ['bc-bg-file', 'bc-template-file', 'bc-font-file'].forEach(id => { const input = $id(id); input.addEventListener('cancel', finishFilePicker); });
+    ['bc-bg-file', 'bc-image-file', 'bc-template-file', 'bc-font-file'].forEach(id => { const input = $id(id); input.addEventListener('cancel', finishFilePicker); });
     $id('bc-new-template').onclick = newBlankTemplate; $id('bc-save-template').onclick = saveCurrentTemplate; $id('bc-export-template').onclick = exportTemplate; $id('bc-delete-template').onclick = deleteCurrentTemplate;
     $id('bc-layer-select').onchange = e => { selectedLayerId = e.target.value; fillLayerEditor(); scheduleRender(); };
     $id('bc-add-text').onclick = addTextLayer; $id('bc-remove-layer').onclick = removeCurrentLayer;
-    bindQuickExcerpt(); bindLayerEditor(); bindBackgroundEditor(); bindCanvasDrag();
+    bindQuickExcerpt(); bindImageEditor(); bindLayerEditor(); bindBackgroundEditor(); bindCanvasDrag();
   }
-  function refreshAll() { renderTemplateLibrary(); renderQuickExcerpt(); renderContentFields(); renderLayerSelect(); fillLayerEditor(); fillBackgroundEditor(); scheduleRender(); saveWorkSoon(); }
+  function refreshAll() { renderTemplateLibrary(); renderQuickExcerpt(); renderContentFields(); renderImageLayerSelect(); fillImageEditor(); renderLayerSelect(); fillLayerEditor(); fillBackgroundEditor(); scheduleRender(); saveWorkSoon(); }
 
   function renderQuickExcerpt() {
     const select = $id('bc-chat-pick'); if (!select) return; select.innerHTML = '';
@@ -361,7 +442,7 @@
   }
   async function useTemplate(id) {
     const template = allTemplates().find(t => t.id === id); if (!template) return; const preserved = editedContent();
-    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm();
+    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm();
   }
   function renderContentFields() {
     const box = $id('bc-content-fields'); box.innerHTML = ''; const binds = [...new Set(currentTextLayers().map(layer => layer.bind))];
@@ -372,6 +453,44 @@
     });
     if (!binds.length) box.innerHTML = '<p class="bc-muted">这个模板没有可替换文字层。</p>';
   }
+  function renderImageLayerSelect() {
+    const select = $id('bc-image-select'); const layers = currentImageLayers(); if (!select) return; select.innerHTML = '';
+    if (!layers.some(layer => layer.id === selectedImageId)) selectedImageId = layers[0]?.id || '';
+    layers.forEach(layer => { const option = mainDoc.createElement('option'); option.value = layer.id; option.textContent = layer.name || layer.id; option.selected = layer.id === selectedImageId; select.appendChild(option); });
+    $id('bc-image-editor').hidden = !layers.length; $id('bc-image-empty').hidden = !!layers.length; $id('bc-remove-image').disabled = !layers.length;
+  }
+  function fillImageEditor() {
+    const layer = currentImageLayer(); if (!layer) return;
+    $id('bc-image-fit').value = layer.fit === 'contain' ? 'contain' : 'cover'; $id('bc-image-fade').value = layer.fade?.edge || 'none';
+    setRange('bc-image-x', Math.round((layer.positionX ?? .5) * 100), 'bc-image-x-v', `${Math.round((layer.positionX ?? .5) * 100)}%`);
+    setRange('bc-image-y', Math.round((layer.positionY ?? .5) * 100), 'bc-image-y-v', `${Math.round((layer.positionY ?? .5) * 100)}%`);
+    setRange('bc-image-opacity', Math.round((layer.opacity ?? 1) * 100), 'bc-image-opacity-v', `${Math.round((layer.opacity ?? 1) * 100)}%`);
+    setRange('bc-image-radius', Math.round(layer.radius || 0), 'bc-image-radius-v', `${Math.round(layer.radius || 0)}px`);
+    $id('bc-image-clear').disabled = !layer.src;
+  }
+  function bindImageEditor() {
+    const update = fn => { const layer = currentImageLayer(); if (!layer) return; fn(layer); fillImageEditor(); scheduleRender(); saveWorkSoon(); };
+    $id('bc-image-select').onchange = event => { selectedImageId = event.target.value; fillImageEditor(); scheduleRender(); };
+    $id('bc-image-fit').onchange = event => update(layer => layer.fit = event.target.value === 'contain' ? 'contain' : 'cover');
+    $id('bc-image-fade').onchange = event => update(layer => { const edge = event.target.value; if (edge === 'none') delete layer.fade; else layer.fade = { edge, color: validColor(layer.fade?.color, work.template.background?.color1 || '#ffffff'), start: layer.fade?.start ?? .45 }; });
+    $id('bc-image-x').oninput = event => update(layer => layer.positionX = Number(event.target.value) / 100);
+    $id('bc-image-y').oninput = event => update(layer => layer.positionY = Number(event.target.value) / 100);
+    $id('bc-image-opacity').oninput = event => update(layer => layer.opacity = Number(event.target.value) / 100);
+    $id('bc-image-radius').oninput = event => update(layer => layer.radius = Number(event.target.value));
+  }
+  function addImageLayer() {
+    const index = currentImageLayers().length + 1; const layer = normalizeLayer({ id: `image-${Date.now().toString(36)}`, type: 'image', name: `图片 ${index}`, x: .15, y: .18, w: .7, h: .3, fit: 'cover', positionX: .5, positionY: .5, opacity: 1, radius: 0, placeholder: ['#d8d5cf', '#eeece7'] }, work.template.layers.length);
+    work.template.layers.unshift(layer); selectedImageId = layer.id; refreshAll(); $id('bc-image-card').open = true;
+  }
+  function removeImageLayer() {
+    const layer = currentImageLayer(); if (!layer || !mainWin.confirm(`删除图片层「${layer.name || layer.id}」？`)) return;
+    work.template.layers = work.template.layers.filter(item => item.id !== layer.id); selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll();
+  }
+  async function importLayerImage(event) {
+    const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return; const layer = currentImageLayer(); if (!layer) return;
+    try { layer.src = await compressImage(file, 1600, .84); await ensureImage(layer.src); fillImageEditor(); scheduleRender(); saveWorkSoon(); toast(`已替换「${layer.name || '图片'}」`, 'success'); } catch (e) { showLaunchError(e); }
+  }
+  function clearLayerImage() { const layer = currentImageLayer(); if (!layer) return; layer.src = ''; fillImageEditor(); scheduleRender(); saveWorkSoon(); }
   function renderLayerSelect() {
     const select = $id('bc-layer-select'); select.innerHTML = ''; const layers = currentTextLayers(); if (!layers.some(layer => layer.id === selectedLayerId)) selectedLayerId = layers[0]?.id || '';
     layers.forEach(layer => { const option = mainDoc.createElement('option'); option.value = layer.id; option.textContent = `${FIELD_LABELS[layer.bind] || layer.bind} · ${layer.id}`; option.selected = layer.id === selectedLayerId; select.appendChild(option); }); $id('bc-layer-editor').hidden = !layers.length;
@@ -420,7 +539,7 @@
   }
   async function saveCurrentTemplate() {
     const name = await askName(work.template.name || '我的模板'); if (!name) return; await hydrateTemplateFonts(work.template); const packageData = templatePackage(name, true);
-    try { await dbPut(packageData); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(packageData); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); toast('已保存到模板库', 'success'); } catch (e) { showLaunchError(e); }
+    try { await dbPut(packageData); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(packageData); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll(); toast('已保存到模板库', 'success'); } catch (e) { showLaunchError(e); }
   }
   function templatePackage(name, renewId) {
     const t = clone(work.template); t.format = FORMAT; t.schemaVersion = SCHEMA_VERSION; t.name = safeName(name || t.name);
@@ -430,15 +549,15 @@
   async function exportTemplate() { await hydrateTemplateFonts(work.template); const t = templatePackage(work.template.name || '分享模板', false); downloadBlob(new Blob([JSON.stringify(t, null, 2)], { type: 'application/json' }), `${safeName(t.name)}.birdclip.json`); toast('模板包已导出', 'success'); }
   async function importTemplateFile(event) {
     const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
-    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
+    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
   }
   async function deleteCurrentTemplate() {
-    const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll();
+    const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; selectedImageId = currentImageLayers()[0]?.id || ''; refreshAll();
   }
   function newBlankTemplate() {
     const preserved = editedContent();
     const t = normalizeTemplate({ format: FORMAT, schemaVersion: 1, id: `draft-${Date.now()}`, name: '空白模板', canvas: { width: 720, height: 1280 }, background: { color1: '#f4f0e8', color2: '#ffffff', angle: 135, image: '', dim: 0, grain: 5 }, defaultContent: { title: '标题', subtitle: '', body: '在这里输入正文。', author: '', source: '', watermark: '', extra: '' }, layers: [{ id: 'title', type: 'text', bind: 'title', x: .1, y: .12, w: .8, size: 58, font: 'serif', color: '#282522', align: 'center', lineHeight: 1.2, letterSpacing: 5, opacity: 1, rotate: 0 }, { id: 'body', type: 'text', bind: 'body', x: .14, y: .34, w: .72, size: 30, font: 'serif', color: '#3f3a35', align: 'left', lineHeight: 1.8, letterSpacing: 1, opacity: 1, rotate: 0 }] }, false);
-    work = defaultWork(t); work.values = { ...work.values, ...preserved }; selectedLayerId = 'body'; refreshAll();
+    work = defaultWork(t); work.values = { ...work.values, ...preserved }; selectedLayerId = 'body'; selectedImageId = ''; refreshAll();
   }
   function addTextLayer() {
     const used = new Set(currentTextLayers().map(l => l.bind)); const bind = ['title', 'subtitle', 'body', 'author', 'source', 'watermark', 'extra'].find(x => !used.has(x)) || 'extra'; const layer = normalizeLayer({ id: `text-${Date.now().toString(36)}`, type: 'text', bind, x: .15, y: .18, w: .7, size: 34, font: 'serif', color: '#333333', align: 'center', lineHeight: 1.5, letterSpacing: 1, opacity: 1, rotate: 0 }, work.template.layers.length);
@@ -500,9 +619,9 @@
     clearTimeout(fontWarmTimer);
     fontWarmTimer = mainWin.setTimeout(() => { if (!work) return; warmTemplateRemoteFonts(work.template, work.values).then(scheduleRender).catch(() => {}); }, 180);
   }
-  function compressImage(file) {
+  function compressImage(file, max = 1800, quality = .86) {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader(); reader.onerror = () => reject(reader.error); reader.onload = () => { const image = new Image(); image.onerror = reject; image.onload = () => { const max = 1800; const scale = Math.min(1, max / Math.max(image.width, image.height)); const canvas = mainDoc.createElement('canvas'); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale); canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL('image/jpeg', .86)); }; image.src = reader.result; }; reader.readAsDataURL(file);
+      const reader = new FileReader(); reader.onerror = () => reject(reader.error); reader.onload = () => { const image = new Image(); image.onerror = reject; image.onload = () => { const scale = Math.min(1, max / Math.max(image.width, image.height)); const canvas = mainDoc.createElement('canvas'); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale); canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL('image/jpeg', quality)); }; image.src = reader.result; }; reader.readAsDataURL(file);
     });
   }
   function ensureImage(src) {
@@ -516,15 +635,33 @@
     const W = template.canvas.width; const H = template.canvas.height;
     if (thumbnail) { canvas.width = 252; canvas.height = Math.max(180, Math.round(252 * H / W)); } else { canvas.width = W; canvas.height = H; }
     const ctx = canvas.getContext('2d'); const sx = canvas.width / W; const sy = canvas.height / H; ctx.save(); ctx.scale(sx, sy); drawBackground(ctx, template, W, H); const bounds = [];
-    for (const layer of template.layers) { if (layer.type === 'text') drawTextLayer(ctx, layer, values, W, H, bounds, template); else if (layer.type === 'line') drawLine(ctx, layer, W, H); else if (layer.type === 'rect') drawRect(ctx, layer, W, H); }
+    for (const layer of template.layers) { if (layer.type === 'text') drawTextLayer(ctx, layer, values, W, H, bounds, template); else if (layer.type === 'image') drawImageLayer(ctx, layer, W, H); else if (layer.type === 'line') drawLine(ctx, layer, W, H); else if (layer.type === 'rect') drawRect(ctx, layer, W, H); }
     drawGrain(ctx, template.background.grain || 0, W, H); ctx.restore(); if (interactive) { layerBounds = bounds; drawSelection(canvas, template, W, H); }
-    if (template.background.image && !imageCache.has(template.background.image)) ensureImage(template.background.image).then(() => thumbnail ? renderTemplateCanvas(canvas, template, values, true) : scheduleRender());
+    const pendingImages = [template.background.image, ...template.layers.filter(layer => layer.type === 'image').map(layer => layer.src)].filter(src => src && !imageCache.has(src));
+    if (pendingImages.length) Promise.all(pendingImages.map(ensureImage)).then(() => thumbnail ? renderTemplateCanvas(canvas, template, values, true) : scheduleRender());
   }
   function drawBackground(ctx, template, W, H) {
     const bg = template.background || {}; const angle = (Number(bg.angle || 135) - 90) * Math.PI / 180; const cx = W / 2, cy = H / 2, len = Math.abs(W * Math.cos(angle)) + Math.abs(H * Math.sin(angle)); const dx = Math.cos(angle) * len / 2, dy = Math.sin(angle) * len / 2;
     const gradient = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy); gradient.addColorStop(0, validColor(bg.color1, '#f3efe7')); gradient.addColorStop(1, validColor(bg.color2, '#ffffff')); ctx.fillStyle = gradient; ctx.fillRect(0, 0, W, H);
     const image = imageCache.get(bg.image); if (image) { const scale = Math.max(W / image.width, H / image.height); const dw = image.width * scale, dh = image.height * scale; ctx.drawImage(image, (W - dw) / 2, (H - dh) / 2, dw, dh); }
     if (bg.dim) { ctx.fillStyle = `rgba(0,0,0,${clamp(bg.dim, 0, 90) / 100})`; ctx.fillRect(0, 0, W, H); }
+  }
+  function roundedRectPath(ctx, x, y, w, h, radius) {
+    const r = Math.min(Math.max(0, radius || 0), w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r); ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+  function drawImageLayer(ctx, layer, W, H) {
+    const x = layer.x * W, y = layer.y * H, width = layer.w * W, height = layer.h * H; if (width <= 0 || height <= 0) return;
+    ctx.save(); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); roundedRectPath(ctx, x, y, width, height, Number(layer.radius || 0)); ctx.clip();
+    const colors = Array.isArray(layer.placeholder) ? layer.placeholder : ['#d8d5cf', '#eeece7']; const placeholder = ctx.createLinearGradient(x, y, x + width, y + height); placeholder.addColorStop(0, validColor(colors[0], '#d8d5cf')); placeholder.addColorStop(1, validColor(colors[1], '#eeece7')); ctx.fillStyle = placeholder; ctx.fillRect(x, y, width, height);
+    const image = imageCache.get(layer.src);
+    if (image) {
+      const scale = (layer.fit === 'contain' ? Math.min : Math.max)(width / image.width, height / image.height); const dw = image.width * scale, dh = image.height * scale; const px = clamp(layer.positionX ?? .5, 0, 1), py = clamp(layer.positionY ?? .5, 0, 1); const dx = x + (width - dw) * px, dy = y + (height - dh) * py; ctx.drawImage(image, dx, dy, dw, dh);
+    }
+    if (layer.fade?.edge) {
+      const edge = layer.fade.edge; let gradient; if (edge === 'top') gradient = ctx.createLinearGradient(x, y + height, x, y); else if (edge === 'left') gradient = ctx.createLinearGradient(x + width, y, x, y); else if (edge === 'right') gradient = ctx.createLinearGradient(x, y, x + width, y); else gradient = ctx.createLinearGradient(x, y, x, y + height);
+      const start = clamp(layer.fade.start ?? .5, 0, .95); gradient.addColorStop(0, colorAlpha(layer.fade.color, 0)); gradient.addColorStop(start, colorAlpha(layer.fade.color, 0)); gradient.addColorStop(1, colorAlpha(layer.fade.color, 1)); ctx.fillStyle = gradient; ctx.fillRect(x, y, width, height);
+    }
+    ctx.restore();
   }
   function drawTextLayer(ctx, layer, values, W, H, bounds, template) {
     const text = String(layer.bind ? values[layer.bind] ?? '' : layer.text ?? ''); if (!text) return;
@@ -556,12 +693,13 @@
   function canvasPoint(event, canvas) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left) * canvas.width / rect.width, y: (event.clientY - rect.top) * canvas.height / rect.height }; }
 
   async function exportPng() {
-    if (!work) return; await Promise.all([ensureImage(work.template.background?.image), warmTemplateRemoteFonts(work.template, work.values)]); const canvas = mainDoc.createElement('canvas'); renderTemplateCanvas(canvas, work.template, work.values, false, false);
+    if (!work) return; const sources = [work.template.background?.image, ...currentImageLayers().map(layer => layer.src)].filter(Boolean); await Promise.all([...sources.map(ensureImage), warmTemplateRemoteFonts(work.template, work.values)]); const canvas = mainDoc.createElement('canvas'); renderTemplateCanvas(canvas, work.template, work.values, false, false);
     canvas.toBlob(blob => { if (!blob) return; downloadBlob(blob, `${safeName(work.values.title || work.template.name || '书摘')}.png`); if (/Android|iPhone|iPad/i.test(mainWin.navigator.userAgent)) setTimeout(() => showImage(canvas.toDataURL('image/png')), 300); }, 'image/png');
   }
   function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const a = mainDoc.createElement('a'); a.href = url; a.download = filename; mainDoc.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); }
   function showImage(src) { $id('bc-imgpop')?.remove(); const pop = mainDoc.createElement('div'); pop.id = 'bc-imgpop'; pop.innerHTML = '<button>×</button><img alt="导出的书摘"><p>长按图片保存</p>'; pop.querySelector('img').src = src; pop.querySelector('button').onclick = () => pop.remove(); mainDoc.body.appendChild(pop); }
   function validColor(value, fallback) { return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : fallback; }
+  function colorAlpha(value, alpha) { const hex = validColor(value, '#ffffff').slice(1); const r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16); return `rgba(${r},${g},${b},${clamp(alpha, 0, 1)})`; }
   function showInfo(message) { const api = popupApi(); try { if (api?.Popup?.show?.text) { api.Popup.show.text('模板包说明', message); return; } } catch (e) {} mainWin.alert(message); }
   function showLaunchError(error) { const message = String(error?.message || error || '未知错误'); toast(message, 'error'); const api = popupApi(); try { if (api?.Popup?.show?.text) { api.Popup.show.text('落句排版室出错', message); return; } } catch (e) {} mainWin.alert(message); }
 
