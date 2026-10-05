@@ -9,7 +9,7 @@
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.2.3';
+  const VERSION = '2.3.0';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
@@ -32,6 +32,14 @@
     rounded: '"Yuanti SC","STYuanti","Hiragino Maru Gothic ProN","PingFang SC",sans-serif',
     mono: '"Sarasa Mono SC","Noto Sans Mono CJK SC","SFMono-Regular","Courier New",monospace',
     latin: 'Georgia,"Times New Roman",serif',
+    wenkai: '"LXGW WenKai","Kaiti SC","STKaiti","Noto Serif SC",serif',
+    sourceHanSerif: '"Noto Serif CJK","Source Han Serif SC","Noto Serif SC","Songti SC",serif',
+    zhuque: '"Zhuque Fangsong (technical preview)","FangSong","STFangsong","Noto Serif SC",serif',
+  };
+  const REMOTE_FONTS = {
+    wenkai: { name: '霞鹜文楷', family: 'LXGW WenKai' },
+    sourceHanSerif: { name: '思源宋体', family: 'Noto Serif CJK' },
+    zhuque: { name: '朱雀仿宋', family: 'Zhuque Fangsong (technical preview)' },
   };
   const TEXT_COLORS = ['#1f2329', '#ece8df', '#6f6259', '#8a4f55', '#9a654f', '#6b715f', '#3f6259', '#537080', '#46516b', '#756d7d', '#b9aea0', '#f6f1e8'];
   const BACKGROUND_PRESETS = [
@@ -107,6 +115,7 @@
   let filePickerActive = false;
   let filePickerShouldRestore = false;
   let filePickerTimer = 0;
+  let fontWarmTimer = 0;
   const imageCache = new Map();
   const registeredFonts = new Set();
 
@@ -282,7 +291,7 @@
       nativePopup = new api.Popup(panel, api.POPUP_TYPE.DISPLAY, '', { wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false, okButton: false, cancelButton: false, onClosing: async () => { if (filePickerActive) { filePickerShouldRestore = true; return false; } panel.remove(); nativePopup = null; nativePopupApi = null; return true; } });
       Promise.resolve(nativePopup.show()).catch(showLaunchError);
     } else { mainDoc.body.style.overflow = 'hidden'; }
-    bindUI(); refreshAll(); const excerpt = pendingExcerpt; pendingExcerpt = ''; if (excerpt) applyExcerpt(excerpt, null, '选中段落');
+    bindUI(); refreshAll(); queueRemoteFontWarm(); const excerpt = pendingExcerpt; pendingExcerpt = ''; if (excerpt) applyExcerpt(excerpt, null, '选中段落');
   }
   function closePanel() {
     const popup = nativePopup; const api = nativePopupApi; nativePopup = null; nativePopupApi = null;
@@ -334,7 +343,7 @@
     work.values[layer.bind] = text;
     const authorLayer = currentTextLayers().find(x => x.bind === 'author');
     if (message?.name && authorLayer && !String(work.values.author || '').trim()) work.values.author = String(message.name);
-    selectedLayerId = layer.id; renderContentFields(); renderLayerSelect(); fillLayerEditor(); scheduleRender(); saveWorkSoon(); toast(`已摘录到「${FIELD_LABELS[layer.bind] || layer.bind}」`, 'success');
+    selectedLayerId = layer.id; renderContentFields(); renderLayerSelect(); fillLayerEditor(); scheduleRender(); queueRemoteFontWarm(); saveWorkSoon(); toast(`已摘录到「${FIELD_LABELS[layer.bind] || layer.bind}」`, 'success');
   }
 
   function renderTemplateLibrary() {
@@ -352,14 +361,14 @@
   }
   async function useTemplate(id) {
     const template = allTemplates().find(t => t.id === id); if (!template) return; const preserved = editedContent();
-    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; refreshAll();
+    await hydrateTemplateFonts(template); work = defaultWork(template); work.values = { ...work.values, ...preserved }; selectedLayerId = currentTextLayers().find(layer => layer.bind === 'body')?.id || currentTextLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm();
   }
   function renderContentFields() {
     const box = $id('bc-content-fields'); box.innerHTML = ''; const binds = [...new Set(currentTextLayers().map(layer => layer.bind))];
     binds.forEach(bind => {
       const wrap = mainDoc.createElement('div'); wrap.className = 'bc-field'; const label = mainDoc.createElement('label'); label.textContent = FIELD_LABELS[bind] || bind;
       const multiline = bind === 'body' || bind === 'extra'; const input = mainDoc.createElement(multiline ? 'textarea' : 'input'); if (!multiline) input.type = 'text'; input.value = work.values[bind] ?? '';
-      input.addEventListener('input', e => { work.values[bind] = e.target.value; scheduleRender(); saveWorkSoon(); }); wrap.append(label, input); box.appendChild(wrap);
+      input.addEventListener('input', e => { work.values[bind] = e.target.value; scheduleRender(); queueRemoteFontWarm(); saveWorkSoon(); }); wrap.append(label, input); box.appendChild(wrap);
     });
     if (!binds.length) box.innerHTML = '<p class="bc-muted">这个模板没有可替换文字层。</p>';
   }
@@ -377,13 +386,13 @@
   function setRange(id, value, valueId, display) { $id(id).value = value; $id(valueId).textContent = display; }
   function bindLayerEditor() {
     const update = fn => { const layer = currentLayer(); if (!layer) return; fn(layer); fillLayerEditor(); scheduleRender(); saveWorkSoon(); };
-    $id('bc-l-font').onchange = e => update(layer => { const value = e.target.value; if (value.startsWith('asset:')) layer.fontAssetId = value.slice(6); else { delete layer.fontAssetId; layer.font = value; } }); $id('bc-l-align').onchange = e => update(layer => layer.align = e.target.value); $id('bc-l-color').oninput = e => update(layer => layer.color = e.target.value); $id('bc-l-opacity').oninput = e => update(layer => layer.opacity = Number(e.target.value));
+    $id('bc-l-font').onchange = e => { update(layer => { const value = e.target.value; if (value.startsWith('asset:')) layer.fontAssetId = value.slice(6); else { delete layer.fontAssetId; layer.font = value; } }); queueRemoteFontWarm(); }; $id('bc-l-align').onchange = e => update(layer => layer.align = e.target.value); $id('bc-l-color').oninput = e => update(layer => layer.color = e.target.value); $id('bc-l-opacity').oninput = e => update(layer => layer.opacity = Number(e.target.value));
     $id('bc-l-size').oninput = e => update(layer => layer.size = Number(e.target.value)); $id('bc-l-width').oninput = e => update(layer => layer.w = Number(e.target.value) / 100); $id('bc-l-line').oninput = e => update(layer => layer.lineHeight = Number(e.target.value)); $id('bc-l-space').oninput = e => update(layer => layer.letterSpacing = Number(e.target.value)); $id('bc-l-rotate').oninput = e => update(layer => layer.rotate = Number(e.target.value));
     $id('bc-l-bold').onchange = e => update(layer => layer.weight = e.target.checked ? 700 : 400); $id('bc-l-italic').onchange = e => update(layer => layer.italic = e.target.checked); $id('bc-l-stroke').onchange = e => update(layer => layer.stroke = { enabled: e.target.checked, color: layer.stroke?.color || '#000000', width: layer.stroke?.width || 2 }); $id('bc-l-shadow').onchange = e => update(layer => layer.shadow = { enabled: e.target.checked, color: layer.shadow?.color || '#000000', blur: layer.shadow?.blur || 14, x: layer.shadow?.x || 0, y: layer.shadow?.y || 5 });
   }
   function renderFontSelect(layer) {
     const select = $id('bc-l-font'); if (!select) return; select.innerHTML = '';
-    [['serif', '衬线体'], ['sans', '无衬线体'], ['kai', '楷体'], ['latin', '西文衬线']].forEach(([value, label]) => { const option = mainDoc.createElement('option'); option.value = value; option.textContent = label; select.appendChild(option); });
+    [['serif', '系统 · 衬线体'], ['sans', '系统 · 无衬线体'], ['kai', '系统 · 楷体'], ['latin', '系统 · 西文衬线'], ['wenkai', '内置 · 霞鹜文楷'], ['sourceHanSerif', '内置 · 思源宋体'], ['zhuque', '内置 · 朱雀仿宋']].forEach(([value, label]) => { const option = mainDoc.createElement('option'); option.value = value; option.textContent = label; select.appendChild(option); });
     (work.template.fonts || []).forEach(font => { const option = mainDoc.createElement('option'); option.value = `asset:${font.id}`; option.textContent = `已上传 · ${font.name}`; select.appendChild(option); });
     select.value = layer.fontAssetId && (work.template.fonts || []).some(font => font.id === layer.fontAssetId) ? `asset:${layer.fontAssetId}` : (FONT[layer.font] ? layer.font : 'serif');
     $id('bc-font-remove').disabled = !layer.fontAssetId;
@@ -421,7 +430,7 @@
   async function exportTemplate() { await hydrateTemplateFonts(work.template); const t = templatePackage(work.template.name || '分享模板', false); downloadBlob(new Blob([JSON.stringify(t, null, 2)], { type: 'application/json' }), `${safeName(t.name)}.birdclip.json`); toast('模板包已导出', 'success'); }
   async function importTemplateFile(event) {
     const file = event.target.files?.[0]; event.target.value = ''; finishFilePicker(); if (!file) return;
-    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
+    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); queueRemoteFontWarm(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
   }
   async function deleteCurrentTemplate() {
     const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll();
@@ -475,6 +484,21 @@
       if (persist) await dbFontPut(font);
       await registerFontAsset(font).catch(() => {});
     }
+  }
+  async function warmTemplateRemoteFonts(template, values) {
+    if (!mainDoc.fonts || !template?.layers) return;
+    const jobs = [];
+    for (const layer of template.layers) {
+      const remote = !layer.fontAssetId && REMOTE_FONTS[layer.font]; if (!remote) continue;
+      const textValue = String(layer.bind ? values?.[layer.bind] ?? '' : layer.text ?? '').slice(0, 12000) || '落句排版室';
+      const weight = Number(layer.weight || 400) >= 600 ? 700 : 400;
+      jobs.push(mainDoc.fonts.load(`${weight} 32px "${remote.family}"`, textValue).catch(() => []));
+    }
+    await Promise.all(jobs);
+  }
+  function queueRemoteFontWarm() {
+    clearTimeout(fontWarmTimer);
+    fontWarmTimer = mainWin.setTimeout(() => { if (!work) return; warmTemplateRemoteFonts(work.template, work.values).then(scheduleRender).catch(() => {}); }, 180);
   }
   function compressImage(file) {
     return new Promise((resolve, reject) => {
@@ -532,7 +556,7 @@
   function canvasPoint(event, canvas) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left) * canvas.width / rect.width, y: (event.clientY - rect.top) * canvas.height / rect.height }; }
 
   async function exportPng() {
-    if (!work) return; await ensureImage(work.template.background?.image); const canvas = mainDoc.createElement('canvas'); renderTemplateCanvas(canvas, work.template, work.values, false, false);
+    if (!work) return; await Promise.all([ensureImage(work.template.background?.image), warmTemplateRemoteFonts(work.template, work.values)]); const canvas = mainDoc.createElement('canvas'); renderTemplateCanvas(canvas, work.template, work.values, false, false);
     canvas.toBlob(blob => { if (!blob) return; downloadBlob(blob, `${safeName(work.values.title || work.template.name || '书摘')}.png`); if (/Android|iPhone|iPad/i.test(mainWin.navigator.userAgent)) setTimeout(() => showImage(canvas.toDataURL('image/png')), 300); }, 'image/png');
   }
   function downloadBlob(blob, filename) { const url = URL.createObjectURL(blob); const a = mainDoc.createElement('a'); a.href = url; a.download = filename; mainDoc.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); }
@@ -548,7 +572,7 @@
     if (!item) { item = mainDoc.createElement('div'); item.id = 'bc-menu-entry'; item.className = 'list-group-item flex-container flexGap5 interactable'; item.tabIndex = 0; item.innerHTML = '<div class="fa-fw fa-solid fa-wand-magic-sparkles extensionsMenuExtensionButton"></div><span>落句排版室</span>'; menu.appendChild(item); }
     item.onclick = openFromMenu; item.dataset.bcGen = RUN_ID; return true;
   }
-  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); clearTimeout(filePickerTimer); mainDoc.removeEventListener('selectionchange', captureSelection); mainDoc.removeEventListener('visibilitychange', handleVisibilityReturn); mainWin.removeEventListener('focus', handlePickerReturn); closePanel(); ['bc-menu-entry', 'bc-imgpop', 'bc-selection-action'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
+  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); clearTimeout(filePickerTimer); clearTimeout(fontWarmTimer); mainDoc.removeEventListener('selectionchange', captureSelection); mainDoc.removeEventListener('visibilitychange', handleVisibilityReturn); mainWin.removeEventListener('focus', handlePickerReturn); closePanel(); ['bc-menu-entry', 'bc-imgpop', 'bc-selection-action'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
   function install() { mainDoc.addEventListener('selectionchange', captureSelection); mainDoc.addEventListener('visibilitychange', handleVisibilityReturn); mainWin.addEventListener('focus', handlePickerReturn); captureSelection(); ensureMenuEntry(); entryObserver = new MutationObserver(() => ensureMenuEntry()); entryObserver.observe(mainDoc.body, { childList: true, subtree: true }); entryTimer = setInterval(ensureMenuEntry, 1200); toast(`${SCRIPT_NAME} v${VERSION} 已加载`, 'success'); }
   mainWin.__birdclipStudioCleanup = cleanup; setTimeout(install, 700);
 })();
