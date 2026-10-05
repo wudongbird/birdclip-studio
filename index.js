@@ -3,19 +3,20 @@
 
   try {
     if (typeof window.__birdclipStudioCleanup === 'function') window.__birdclipStudioCleanup();
-    ['bc-panel', 'bc-menu-entry', 'bc-imgpop'].forEach(id => document.getElementById(id)?.remove());
+    ['bc-panel', 'bc-menu-entry', 'bc-imgpop', 'bc-selection-action'].forEach(id => document.getElementById(id)?.remove());
   } catch (e) {}
 
   const mainDoc = document;
   const mainWin = window;
   const SCRIPT_NAME = '落句排版室';
-  const VERSION = '2.1.0';
+  const VERSION = '2.2.0';
   const FORMAT = 'birdclip-template';
   const SCHEMA_VERSION = 1;
   const RUN_ID = `${VERSION}.${Date.now().toString(36)}`;
   const WORK_KEY = 'birdclip-studio:work-v2';
   const DB_NAME = 'birdclip-studio';
   const DB_STORE = 'templates';
+  const DB_FONT_STORE = 'fonts';
   const $id = id => mainDoc.getElementById(id);
   const clamp = (n, a, b) => Math.max(a, Math.min(b, Number(n) || 0));
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -102,7 +103,9 @@
   let layerBounds = [];
   let dragState = null;
   let cachedSelection = '';
+  let pendingExcerpt = '';
   const imageCache = new Map();
+  const registeredFonts = new Set();
 
   function toast(message, type = 'info') {
     try { if (mainWin.toastr?.[type]) mainWin.toastr[type](message, '', { timeOut: 2400, positionClass: 'toast-top-center' }); } catch (e) {}
@@ -115,9 +118,26 @@
     try {
       const selection = mainWin.getSelection?.(); const text = String(selection?.toString?.() || '').trim();
       const node = selection?.anchorNode; const element = node?.nodeType === 1 ? node : node?.parentElement;
-      if (text && !element?.closest?.('#bc-panel')) cachedSelection = text.slice(0, 12000);
-    } catch (e) {}
+      if (text && !element?.closest?.('#bc-panel,#bc-selection-action') && !element?.closest?.('input,textarea')) {
+        cachedSelection = text.slice(0, 12000); showSelectionAction(selection); return;
+      }
+      if (!text) hideSelectionAction();
+    } catch (e) { hideSelectionAction(); }
   }
+  function showSelectionAction(selection) {
+    let button = $id('bc-selection-action');
+    if (!button) {
+      button = mainDoc.createElement('button'); button.id = 'bc-selection-action'; button.type = 'button'; button.innerHTML = '<span>✦</span> 书摘';
+      button.addEventListener('pointerdown', event => event.preventDefault());
+      button.onclick = () => { pendingExcerpt = cachedSelection; hideSelectionAction(); Promise.resolve(openPanel()).catch(showLaunchError); };
+      mainDoc.body.appendChild(button);
+    }
+    const range = selection?.rangeCount ? selection.getRangeAt(selection.rangeCount - 1) : null; const rect = range?.getBoundingClientRect?.();
+    if (!rect || (!rect.width && !rect.height)) return;
+    const width = 86; const left = clamp(rect.left + rect.width / 2 - width / 2, 8, Math.max(8, mainWin.innerWidth - width - 8)); const top = rect.bottom + 10 + 48 < mainWin.innerHeight ? rect.bottom + 10 : rect.top - 48;
+    button.style.left = `${left}px`; button.style.top = `${Math.max(8, top)}px`; button.hidden = false;
+  }
+  function hideSelectionAction() { const button = $id('bc-selection-action'); if (button) button.hidden = true; }
   function chatEntries() {
     try {
       const chat = mainWin.SillyTavern?.getContext?.()?.chat;
@@ -136,7 +156,7 @@
   function defaultWork(template) { return { templateId: template.id, template: clone(template), values: { ...template.defaultContent }, updatedAt: Date.now() }; }
   function saveWorkSoon() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { try { mainWin.localStorage.setItem(WORK_KEY, JSON.stringify(work)); } catch (e) {} }, 240);
+    saveTimer = setTimeout(() => { try { const snapshot = clone(work); (snapshot.template.fonts || []).forEach(font => { font.data = ''; }); mainWin.localStorage.setItem(WORK_KEY, JSON.stringify(snapshot)); } catch (e) {} }, 240);
   }
   function restoreWork() {
     try {
@@ -148,8 +168,8 @@
 
   function openDb() {
     return new Promise((resolve, reject) => {
-      const request = mainWin.indexedDB.open(DB_NAME, 1);
-      request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE, { keyPath: 'id' }); };
+      const request = mainWin.indexedDB.open(DB_NAME, 2);
+      request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(DB_STORE)) request.result.createObjectStore(DB_STORE, { keyPath: 'id' }); if (!request.result.objectStoreNames.contains(DB_FONT_STORE)) request.result.createObjectStore(DB_FONT_STORE, { keyPath: 'id' }); };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
@@ -178,6 +198,18 @@
       request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
     });
   }
+  async function dbFontPut(font) {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => { const request = db.transaction(DB_FONT_STORE, 'readwrite').objectStore(DB_FONT_STORE).put(font); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error); });
+  }
+  async function dbFontGet(id) {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => { const request = db.transaction(DB_FONT_STORE, 'readonly').objectStore(DB_FONT_STORE).get(id); request.onsuccess = () => resolve(request.result || null); request.onerror = () => reject(request.error); });
+  }
+  async function dbFontDelete(id) {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => { const request = db.transaction(DB_FONT_STORE, 'readwrite').objectStore(DB_FONT_STORE).delete(id); request.onsuccess = () => resolve(); request.onerror = () => reject(request.error); });
+  }
 
   function normalizeTemplate(raw, imported = false) {
     if (!raw || raw.format !== FORMAT || Number(raw.schemaVersion) !== SCHEMA_VERSION) throw new Error('不是有效的落句排版室模板包');
@@ -187,6 +219,7 @@
     t.name = String(t.name || '导入模板').slice(0, 40); t.builtin = false;
     t.canvas = { width: clamp(t.canvas?.width || 720, 320, 2160), height: clamp(t.canvas?.height || 1280, 320, 2160) };
     t.background = { color1: '#f3efe7', color2: '#ffffff', angle: 135, image: '', dim: 0, grain: 0, ...(t.background || {}) };
+    t.fonts = Array.isArray(t.fonts) ? t.fonts.slice(0, 8).map((font, index) => ({ id: String(font?.id || `font-${index}`), name: String(font?.name || `自定义字体 ${index + 1}`).slice(0, 60), data: String(font?.data || '') })) : [];
     t.defaultContent = { title: '', subtitle: '', body: '', author: '', source: '', watermark: '', extra: '', ...(t.defaultContent || {}) };
     t.layers = t.layers.slice(0, 80).map((layer, index) => normalizeLayer(layer, index));
     t.format = FORMAT; t.schemaVersion = SCHEMA_VERSION; return t;
@@ -209,20 +242,21 @@
           <div class="bc-actions"><button class="bc-btn" id="bc-bg-btn">上传背景</button><button class="bc-btn" id="bc-clear-bg">清除背景</button><button class="bc-btn primary" id="bc-export-png">导出 PNG</button></div>
         </section>
         <section class="bc-controls">
-          <div class="bc-card"><div class="bc-cardhead"><h3>模板库</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></div>
-          <div class="bc-card"><div class="bc-cardhead"><h3>快捷摘录</h3><span id="bc-clip-status"></span></div><p class="bc-muted bc-clip-help">不离开聊天页，直接把内容放进正文。</p><div class="bc-button-grid bc-clip-actions"><button class="bc-btn" id="bc-use-selection">选中文字</button><button class="bc-btn" id="bc-use-last-ai">最近回复</button><button class="bc-btn" id="bc-use-last-user">最近发言</button><button class="bc-btn" id="bc-use-clipboard">粘贴剪贴板</button></div><div class="bc-pick-row"><select id="bc-chat-pick" aria-label="最近聊天"></select><button class="bc-btn" id="bc-use-picked">摘录这条</button></div></div>
+          <div class="bc-card"><div class="bc-cardhead"><h3>选择模板</h3><span id="bc-template-count"></span></div><div class="bc-template-list" id="bc-template-list"></div><details class="bc-subdetails"><summary>模板管理</summary><div class="bc-button-grid"><button class="bc-btn" id="bc-new-template">新建空白</button><button class="bc-btn" id="bc-import-template">导入模板</button><button class="bc-btn" id="bc-save-template">保存到模板库</button><button class="bc-btn" id="bc-export-template">导出分享模板</button></div><button class="bc-textbtn danger" id="bc-delete-template" hidden>删除当前自定义模板</button></details></div>
           <div class="bc-card"><h3>作品文字</h3><div id="bc-content-fields"></div></div>
-          <details class="bc-card" open><summary>文字层与布局</summary><label>当前文字层</label><select id="bc-layer-select"></select><div id="bc-layer-editor"><div class="bc-grid2"><div><label>字体</label><select id="bc-l-font"><option value="serif">通用衬线</option><option value="sourceSerif">思源宋体</option><option value="song">宋体</option><option value="fangSong">仿宋</option><option value="kai">楷体</option><option value="sans">黑体 / 无衬线</option><option value="rounded">圆体</option><option value="mono">等宽体</option><option value="latin">西文衬线</option></select></div><div><label>对齐</label><select id="bc-l-align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div></div><div class="bc-field"><label>本机字体名（可选）</label><input type="text" id="bc-l-custom-font" placeholder="如：霞鹜文楷；对方设备也需安装"></div><div class="bc-grid2"><div><label>文字颜色</label><input type="color" id="bc-l-color"></div><div><label>透明度 <b id="bc-l-opacity-v"></b></label><input type="range" id="bc-l-opacity" min="0" max="1" step="0.05"></div></div><div class="bc-palette" id="bc-text-palette" aria-label="低饱和文字色卡"></div><div class="bc-rangehead"><span>字号</span><b id="bc-l-size-v"></b></div><input type="range" id="bc-l-size" min="8" max="180" step="1"><div class="bc-rangehead"><span>文字宽度</span><b id="bc-l-width-v"></b></div><input type="range" id="bc-l-width" min="5" max="100" step="1"><div class="bc-rangehead"><span>行距</span><b id="bc-l-line-v"></b></div><input type="range" id="bc-l-line" min="0.8" max="3" step="0.05"><div class="bc-rangehead"><span>字距</span><b id="bc-l-space-v"></b></div><input type="range" id="bc-l-space" min="0" max="30" step="1"><div class="bc-rangehead"><span>旋转</span><b id="bc-l-rotate-v"></b></div><input type="range" id="bc-l-rotate" min="-45" max="45" step="1"><div class="bc-grid2"><label class="bc-check"><input type="checkbox" id="bc-l-bold">粗体</label><label class="bc-check"><input type="checkbox" id="bc-l-italic">斜体</label><label class="bc-check"><input type="checkbox" id="bc-l-stroke">描边</label><label class="bc-check"><input type="checkbox" id="bc-l-shadow">阴影</label></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-text">添加文字层</button><button class="bc-btn danger" id="bc-remove-layer">删除当前层</button></div></div></details>
+          <details class="bc-card"><summary>从聊天中摘录</summary><p class="bc-muted bc-clip-help">也可以回到聊天，长按选中一段后直接点“书摘”。</p><div class="bc-cardhead"><span id="bc-clip-status"></span></div><div class="bc-button-grid bc-clip-actions"><button class="bc-btn" id="bc-use-selection">上次选中的段落</button><button class="bc-btn" id="bc-use-clipboard">粘贴剪贴板</button></div><div class="bc-pick-row"><select id="bc-chat-pick" aria-label="最近聊天"></select><button class="bc-btn" id="bc-use-picked">使用整条</button></div><button id="bc-use-last-ai" hidden></button><button id="bc-use-last-user" hidden></button></details>
+          <details class="bc-card"><summary>高级文字设置</summary><label>当前文字层</label><select id="bc-layer-select"></select><div id="bc-layer-editor"><div class="bc-grid2"><div><label>字体</label><select id="bc-l-font"></select></div><div><label>对齐</label><select id="bc-l-align"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></div></div><div class="bc-button-grid bc-font-actions"><button class="bc-btn" id="bc-font-upload">上传字体文件</button><button class="bc-btn danger" id="bc-font-remove">移除当前字体</button></div><p class="bc-muted">支持 TTF、OTF、WOFF、WOFF2；保存或导出模板后会随模板分享。</p><div class="bc-grid2"><div><label>文字颜色</label><input type="color" id="bc-l-color"></div><div><label>透明度 <b id="bc-l-opacity-v"></b></label><input type="range" id="bc-l-opacity" min="0" max="1" step="0.05"></div></div><div class="bc-palette" id="bc-text-palette" aria-label="低饱和文字色卡"></div><div class="bc-rangehead"><span>字号</span><b id="bc-l-size-v"></b></div><input type="range" id="bc-l-size" min="8" max="180" step="1"><div class="bc-rangehead"><span>文字宽度</span><b id="bc-l-width-v"></b></div><input type="range" id="bc-l-width" min="5" max="100" step="1"><div class="bc-rangehead"><span>行距</span><b id="bc-l-line-v"></b></div><input type="range" id="bc-l-line" min="0.8" max="3" step="0.05"><div class="bc-rangehead"><span>字距</span><b id="bc-l-space-v"></b></div><input type="range" id="bc-l-space" min="0" max="30" step="1"><div class="bc-rangehead"><span>旋转</span><b id="bc-l-rotate-v"></b></div><input type="range" id="bc-l-rotate" min="-45" max="45" step="1"><div class="bc-grid2"><label class="bc-check"><input type="checkbox" id="bc-l-bold">粗体</label><label class="bc-check"><input type="checkbox" id="bc-l-italic">斜体</label><label class="bc-check"><input type="checkbox" id="bc-l-stroke">描边</label><label class="bc-check"><input type="checkbox" id="bc-l-shadow">阴影</label></div><div class="bc-button-grid compact"><button class="bc-btn" id="bc-add-text">添加文字层</button><button class="bc-btn danger" id="bc-remove-layer">删除当前层</button></div></div></details>
           <details class="bc-card"><summary>画布与背景</summary><div class="bc-grid2"><div><label>画布宽度</label><input type="number" id="bc-canvas-w" min="320" max="2160"></div><div><label>画布高度</label><input type="number" id="bc-canvas-h" min="320" max="2160"></div></div><label>低饱和背景预设</label><div class="bc-bg-presets" id="bc-bg-presets"></div><div class="bc-grid2"><div><label>渐变颜色一</label><input type="color" id="bc-bg1"></div><div><label>渐变颜色二</label><input type="color" id="bc-bg2"></div></div><div class="bc-rangehead"><span>渐变角度</span><b id="bc-bg-angle-v"></b></div><input type="range" id="bc-bg-angle" min="0" max="360" step="1"><div class="bc-rangehead"><span>背景压暗</span><b id="bc-bg-dim-v"></b></div><input type="range" id="bc-bg-dim" min="0" max="90" step="1"><div class="bc-rangehead"><span>颗粒纹理</span><b id="bc-grain-v"></b></div><input type="range" id="bc-grain" min="0" max="40" step="1"></details>
         </section>
       </div>
-      <input id="bc-bg-file" type="file" accept="image/*" hidden><input id="bc-template-file" type="file" accept="application/json,.json,.birdclip" hidden>`;
+      <input id="bc-bg-file" type="file" accept="image/*" hidden><input id="bc-template-file" type="file" accept="application/json,.json,.birdclip" hidden><input id="bc-font-file" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" hidden>`;
   }
 
   async function openPanel() {
     closePanel();
     customTemplates = (await dbAll()).map(x => { try { return normalizeTemplate(x, false); } catch (e) { return null; } }).filter(Boolean);
-    work = restoreWork(); selectedLayerId = currentTextLayers()[0]?.id || '';
+    await Promise.all(customTemplates.map(template => hydrateTemplateFonts(template)));
+    work = restoreWork(); await hydrateTemplateFonts(work.template); selectedLayerId = currentTextLayers()[0]?.id || '';
     const panel = mainDoc.createElement('div'); panel.id = 'bc-panel'; panel.dataset.bcGen = RUN_ID; panel.innerHTML = panelHtml(); mainDoc.body.appendChild(panel);
     const api = popupApi();
     if (api) {
@@ -230,7 +264,7 @@
       nativePopup = new api.Popup(panel, api.POPUP_TYPE.DISPLAY, '', { wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false, okButton: false, cancelButton: false, onClosing: async () => { panel.remove(); nativePopup = null; nativePopupApi = null; return true; } });
       Promise.resolve(nativePopup.show()).catch(showLaunchError);
     } else { mainDoc.body.style.overflow = 'hidden'; }
-    bindUI(); refreshAll();
+    bindUI(); refreshAll(); const excerpt = pendingExcerpt; pendingExcerpt = ''; if (excerpt) applyExcerpt(excerpt, null, '选中段落');
   }
   function closePanel() {
     const popup = nativePopup; const api = nativePopupApi; nativePopup = null; nativePopupApi = null;
@@ -242,6 +276,7 @@
     $id('bc-help').onclick = () => showInfo('模板包会保存画布、背景与全部文字层样式。作品文字只作为模板的默认示例；别人导入后可以直接替换。');
     $id('bc-bg-btn').onclick = () => $id('bc-bg-file').click(); $id('bc-clear-bg').onclick = () => { work.template.background.image = ''; scheduleRender(); saveWorkSoon(); };
     $id('bc-export-png').onclick = exportPng; $id('bc-import-template').onclick = () => $id('bc-template-file').click(); $id('bc-template-file').onchange = importTemplateFile; $id('bc-bg-file').onchange = importBackground;
+    $id('bc-font-upload').onclick = () => $id('bc-font-file').click(); $id('bc-font-file').onchange = importFontFile; $id('bc-font-remove').onclick = removeCurrentFont;
     $id('bc-new-template').onclick = newBlankTemplate; $id('bc-save-template').onclick = saveCurrentTemplate; $id('bc-export-template').onclick = exportTemplate; $id('bc-delete-template').onclick = deleteCurrentTemplate;
     $id('bc-layer-select').onchange = e => { selectedLayerId = e.target.value; fillLayerEditor(); scheduleRender(); };
     $id('bc-add-text').onclick = addTextLayer; $id('bc-remove-layer').onclick = removeCurrentLayer;
@@ -288,11 +323,11 @@
     templates.forEach(template => {
       const button = mainDoc.createElement('button'); button.className = `bc-template ${work.templateId === template.id ? 'active' : ''}`;
       const canvas = mainDoc.createElement('canvas'); canvas.width = 126; canvas.height = 168; const name = mainDoc.createElement('span'); name.textContent = template.name;
-      button.append(canvas, name); button.onclick = () => useTemplate(template.id); list.appendChild(button); renderTemplateCanvas(canvas, template, template.defaultContent, true);
+      button.append(canvas, name); button.onclick = () => Promise.resolve(useTemplate(template.id)).catch(showLaunchError); list.appendChild(button); renderTemplateCanvas(canvas, template, template.defaultContent, true);
     });
     const current = allTemplates().find(t => t.id === work.templateId); $id('bc-delete-template').hidden = !current || current.builtin;
   }
-  function useTemplate(id) { const template = allTemplates().find(t => t.id === id); if (!template) return; work = defaultWork(template); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); }
+  async function useTemplate(id) { const template = allTemplates().find(t => t.id === id); if (!template) return; await hydrateTemplateFonts(template); work = defaultWork(template); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); }
   function renderContentFields() {
     const box = $id('bc-content-fields'); box.innerHTML = ''; const binds = [...new Set(currentTextLayers().map(layer => layer.bind))];
     binds.forEach(bind => {
@@ -308,7 +343,7 @@
   }
   function fillLayerEditor() {
     const layer = currentLayer(); if (!layer) return;
-    $id('bc-l-font').value = FONT[layer.font] ? layer.font : 'serif'; $id('bc-l-custom-font').value = layer.customFont || ''; $id('bc-l-align').value = layer.align || 'left'; $id('bc-l-color').value = validColor(layer.color, '#222222');
+    renderFontSelect(layer); $id('bc-l-align').value = layer.align || 'left'; $id('bc-l-color').value = validColor(layer.color, '#222222');
     setRange('bc-l-opacity', layer.opacity ?? 1, 'bc-l-opacity-v', `${Math.round((layer.opacity ?? 1) * 100)}%`); setRange('bc-l-size', layer.size, 'bc-l-size-v', `${Math.round(layer.size)}px`); setRange('bc-l-width', Math.round(layer.w * 100), 'bc-l-width-v', `${Math.round(layer.w * 100)}%`);
     setRange('bc-l-line', layer.lineHeight || 1.6, 'bc-l-line-v', Number(layer.lineHeight || 1.6).toFixed(2)); setRange('bc-l-space', layer.letterSpacing || 0, 'bc-l-space-v', `${layer.letterSpacing || 0}px`); setRange('bc-l-rotate', layer.rotate || 0, 'bc-l-rotate-v', `${layer.rotate || 0}°`);
     $id('bc-l-bold').checked = Number(layer.weight || 400) >= 600; $id('bc-l-italic').checked = !!layer.italic; $id('bc-l-stroke').checked = !!layer.stroke?.enabled; $id('bc-l-shadow').checked = !!layer.shadow?.enabled; renderTextPalette();
@@ -316,9 +351,16 @@
   function setRange(id, value, valueId, display) { $id(id).value = value; $id(valueId).textContent = display; }
   function bindLayerEditor() {
     const update = fn => { const layer = currentLayer(); if (!layer) return; fn(layer); fillLayerEditor(); scheduleRender(); saveWorkSoon(); };
-    $id('bc-l-font').onchange = e => update(layer => layer.font = e.target.value); $id('bc-l-custom-font').oninput = e => update(layer => layer.customFont = e.target.value.slice(0, 80)); $id('bc-l-align').onchange = e => update(layer => layer.align = e.target.value); $id('bc-l-color').oninput = e => update(layer => layer.color = e.target.value); $id('bc-l-opacity').oninput = e => update(layer => layer.opacity = Number(e.target.value));
+    $id('bc-l-font').onchange = e => update(layer => { const value = e.target.value; if (value.startsWith('asset:')) layer.fontAssetId = value.slice(6); else { delete layer.fontAssetId; layer.font = value; } }); $id('bc-l-align').onchange = e => update(layer => layer.align = e.target.value); $id('bc-l-color').oninput = e => update(layer => layer.color = e.target.value); $id('bc-l-opacity').oninput = e => update(layer => layer.opacity = Number(e.target.value));
     $id('bc-l-size').oninput = e => update(layer => layer.size = Number(e.target.value)); $id('bc-l-width').oninput = e => update(layer => layer.w = Number(e.target.value) / 100); $id('bc-l-line').oninput = e => update(layer => layer.lineHeight = Number(e.target.value)); $id('bc-l-space').oninput = e => update(layer => layer.letterSpacing = Number(e.target.value)); $id('bc-l-rotate').oninput = e => update(layer => layer.rotate = Number(e.target.value));
     $id('bc-l-bold').onchange = e => update(layer => layer.weight = e.target.checked ? 700 : 400); $id('bc-l-italic').onchange = e => update(layer => layer.italic = e.target.checked); $id('bc-l-stroke').onchange = e => update(layer => layer.stroke = { enabled: e.target.checked, color: layer.stroke?.color || '#000000', width: layer.stroke?.width || 2 }); $id('bc-l-shadow').onchange = e => update(layer => layer.shadow = { enabled: e.target.checked, color: layer.shadow?.color || '#000000', blur: layer.shadow?.blur || 14, x: layer.shadow?.x || 0, y: layer.shadow?.y || 5 });
+  }
+  function renderFontSelect(layer) {
+    const select = $id('bc-l-font'); if (!select) return; select.innerHTML = '';
+    [['serif', '衬线体'], ['sans', '无衬线体'], ['kai', '楷体'], ['latin', '西文衬线']].forEach(([value, label]) => { const option = mainDoc.createElement('option'); option.value = value; option.textContent = label; select.appendChild(option); });
+    (work.template.fonts || []).forEach(font => { const option = mainDoc.createElement('option'); option.value = `asset:${font.id}`; option.textContent = `已上传 · ${font.name}`; select.appendChild(option); });
+    select.value = layer.fontAssetId && (work.template.fonts || []).some(font => font.id === layer.fontAssetId) ? `asset:${layer.fontAssetId}` : (FONT[layer.font] ? layer.font : 'serif');
+    $id('bc-font-remove').disabled = !layer.fontAssetId;
   }
   function fillBackgroundEditor() {
     const t = work.template; const bg = t.background; $id('bc-canvas-w').value = t.canvas.width; $id('bc-canvas-h').value = t.canvas.height; $id('bc-bg1').value = validColor(bg.color1, '#f3efe7'); $id('bc-bg2').value = validColor(bg.color2, '#ffffff'); setRange('bc-bg-angle', bg.angle ?? 135, 'bc-bg-angle-v', `${Math.round(bg.angle ?? 135)}°`); setRange('bc-bg-dim', bg.dim || 0, 'bc-bg-dim-v', `${bg.dim || 0}%`); setRange('bc-grain', bg.grain || 0, 'bc-grain-v', String(bg.grain || 0)); renderBackgroundPresets();
@@ -342,7 +384,7 @@
     const api = popupApi(); try { if (api?.Popup?.show?.input) return await api.Popup.show.input('保存模板', '给这个模板起一个名字：', defaultValue); } catch (e) {} return mainWin.prompt('给这个模板起一个名字：', defaultValue);
   }
   async function saveCurrentTemplate() {
-    const name = await askName(work.template.name || '我的模板'); if (!name) return; const packageData = templatePackage(name, true);
+    const name = await askName(work.template.name || '我的模板'); if (!name) return; await hydrateTemplateFonts(work.template); const packageData = templatePackage(name, true);
     try { await dbPut(packageData); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(packageData); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); toast('已保存到模板库', 'success'); } catch (e) { showLaunchError(e); }
   }
   function templatePackage(name, renewId) {
@@ -350,10 +392,10 @@
     if (renewId || t.builtin || String(t.id).startsWith('builtin-')) t.id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     t.builtin = false; t.defaultContent = { ...work.values }; t.createdWith = `${SCRIPT_NAME} ${VERSION}`; return t;
   }
-  function exportTemplate() { const t = templatePackage(work.template.name || '分享模板', false); downloadBlob(new Blob([JSON.stringify(t, null, 2)], { type: 'application/json' }), `${safeName(t.name)}.birdclip.json`); toast('模板包已导出', 'success'); }
+  async function exportTemplate() { await hydrateTemplateFonts(work.template); const t = templatePackage(work.template.name || '分享模板', false); downloadBlob(new Blob([JSON.stringify(t, null, 2)], { type: 'application/json' }), `${safeName(t.name)}.birdclip.json`); toast('模板包已导出', 'success'); }
   async function importTemplateFile(event) {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
-    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
+    try { const raw = JSON.parse(await file.text()); const t = normalizeTemplate(raw, true); await hydrateTemplateFonts(t, true); await dbPut(t); customTemplates = (await dbAll()).map(x => normalizeTemplate(x, false)); work = defaultWork(t); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll(); toast(`已导入「${t.name}」`, 'success'); } catch (e) { showLaunchError(e); }
   }
   async function deleteCurrentTemplate() {
     const current = customTemplates.find(t => t.id === work.templateId); if (!current || !mainWin.confirm(`删除模板「${current.name}」？`)) return; await dbDelete(current.id); customTemplates = customTemplates.filter(t => t.id !== current.id); work = defaultWork(BUILTINS[0]); selectedLayerId = currentTextLayers()[0]?.id || ''; refreshAll();
@@ -372,6 +414,41 @@
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
     try { work.template.background.image = await compressImage(file); await ensureImage(work.template.background.image); scheduleRender(); saveWorkSoon(); } catch (e) { showLaunchError(e); }
   }
+  async function importFontFile(event) {
+    const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    if (!/\.(ttf|otf|woff2?)$/i.test(file.name)) { toast('请选择 TTF、OTF、WOFF 或 WOFF2 字体文件', 'warning'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast('字体文件请控制在 15MB 以内', 'warning'); return; }
+    if ((work.template.fonts || []).length >= 8) { toast('一个模板最多携带 8 个字体文件', 'warning'); return; }
+    try {
+      const asset = { id: `font-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`, name: safeName(file.name.replace(/\.[^.]+$/, '')), data: await readFileDataUrl(file) };
+      await registerFontAsset(asset); await dbFontPut(asset); work.template.fonts ||= []; work.template.fonts.push(asset);
+      const layer = currentLayer(); if (layer) layer.fontAssetId = asset.id; fillLayerEditor(); scheduleRender(); saveWorkSoon(); toast(`已使用字体「${asset.name}」`, 'success');
+    } catch (e) { showLaunchError(new Error('字体文件无法读取，可能不是有效字体')); }
+  }
+  async function removeCurrentFont() {
+    const layer = currentLayer(); const id = layer?.fontAssetId; if (!id) return;
+    work.template.layers.forEach(item => { if (item.fontAssetId === id) { delete item.fontAssetId; item.font = item.font || 'serif'; } });
+    work.template.fonts = (work.template.fonts || []).filter(font => font.id !== id); await dbFontDelete(id).catch(() => {}); fillLayerEditor(); scheduleRender(); saveWorkSoon(); toast('已从当前模板移除字体', 'success');
+  }
+  function readFileDataUrl(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result || '')); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); }); }
+  function fontFamily(id) { return `Birdclip_${String(id || '').replace(/[^a-z0-9_-]/gi, '_')}`; }
+  function dataUrlBuffer(data) {
+    const base64 = String(data || '').split(',')[1]; if (!base64) throw new Error('字体数据为空'); const binary = mainWin.atob(base64); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i); return bytes.buffer;
+  }
+  async function registerFontAsset(asset) {
+    if (!asset?.id || registeredFonts.has(asset.id) || !asset.data) return;
+    if (!mainWin.FontFace || !mainDoc.fonts) throw new Error('当前浏览器不支持加载字体文件');
+    const face = new mainWin.FontFace(fontFamily(asset.id), dataUrlBuffer(asset.data)); await face.load(); mainDoc.fonts.add(face); registeredFonts.add(asset.id);
+  }
+  async function hydrateTemplateFonts(template, persist = false) {
+    template.fonts ||= [];
+    for (const font of template.fonts) {
+      if (!font.data) { const stored = await dbFontGet(font.id).catch(() => null); if (stored?.data) font.data = stored.data; }
+      if (!font.data) continue;
+      if (persist) await dbFontPut(font);
+      await registerFontAsset(font).catch(() => {});
+    }
+  }
   function compressImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader(); reader.onerror = () => reject(reader.error); reader.onload = () => { const image = new Image(); image.onerror = reject; image.onload = () => { const max = 1800; const scale = Math.min(1, max / Math.max(image.width, image.height)); const canvas = mainDoc.createElement('canvas'); canvas.width = Math.round(image.width * scale); canvas.height = Math.round(image.height * scale); canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height); resolve(canvas.toDataURL('image/jpeg', .86)); }; image.src = reader.result; }; reader.readAsDataURL(file);
@@ -388,7 +465,7 @@
     const W = template.canvas.width; const H = template.canvas.height;
     if (thumbnail) { canvas.width = 252; canvas.height = Math.max(180, Math.round(252 * H / W)); } else { canvas.width = W; canvas.height = H; }
     const ctx = canvas.getContext('2d'); const sx = canvas.width / W; const sy = canvas.height / H; ctx.save(); ctx.scale(sx, sy); drawBackground(ctx, template, W, H); const bounds = [];
-    for (const layer of template.layers) { if (layer.type === 'text') drawTextLayer(ctx, layer, values, W, H, bounds); else if (layer.type === 'line') drawLine(ctx, layer, W, H); else if (layer.type === 'rect') drawRect(ctx, layer, W, H); }
+    for (const layer of template.layers) { if (layer.type === 'text') drawTextLayer(ctx, layer, values, W, H, bounds, template); else if (layer.type === 'line') drawLine(ctx, layer, W, H); else if (layer.type === 'rect') drawRect(ctx, layer, W, H); }
     drawGrain(ctx, template.background.grain || 0, W, H); ctx.restore(); if (interactive) { layerBounds = bounds; drawSelection(canvas, template, W, H); }
     if (template.background.image && !imageCache.has(template.background.image)) ensureImage(template.background.image).then(() => thumbnail ? renderTemplateCanvas(canvas, template, values, true) : scheduleRender());
   }
@@ -398,9 +475,9 @@
     const image = imageCache.get(bg.image); if (image) { const scale = Math.max(W / image.width, H / image.height); const dw = image.width * scale, dh = image.height * scale; ctx.drawImage(image, (W - dw) / 2, (H - dh) / 2, dw, dh); }
     if (bg.dim) { ctx.fillStyle = `rgba(0,0,0,${clamp(bg.dim, 0, 90) / 100})`; ctx.fillRect(0, 0, W, H); }
   }
-  function drawTextLayer(ctx, layer, values, W, H, bounds) {
+  function drawTextLayer(ctx, layer, values, W, H, bounds, template) {
     const text = String(layer.bind ? values[layer.bind] ?? '' : layer.text ?? ''); if (!text) return;
-    const x = layer.x * W, y = layer.y * H, width = layer.w * W; const scale = W / 720; const size = layer.size * scale; const lineHeight = size * Number(layer.lineHeight || 1.5); const spacing = Number(layer.letterSpacing || 0) * scale; const customFont = String(layer.customFont || '').replace(/["\\]/g, '').trim(); const font = customFont ? `"${customFont}",${FONT[layer.font] || FONT.serif}` : (FONT[layer.font] || FONT.serif);
+    const x = layer.x * W, y = layer.y * H, width = layer.w * W; const scale = W / 720; const size = layer.size * scale; const lineHeight = size * Number(layer.lineHeight || 1.5); const spacing = Number(layer.letterSpacing || 0) * scale; const fontAsset = (template.fonts || []).find(font => font.id === layer.fontAssetId); const legacyCustom = String(layer.customFont || '').replace(/["\\]/g, '').trim(); const font = fontAsset ? `"${fontFamily(fontAsset.id)}",${FONT[layer.font] || FONT.serif}` : (legacyCustom ? `"${legacyCustom}",${FONT[layer.font] || FONT.serif}` : (FONT[layer.font] || FONT.serif));
     ctx.save(); ctx.translate(x + width / 2, y); ctx.rotate(Number(layer.rotate || 0) * Math.PI / 180); ctx.translate(-(x + width / 2), -y); ctx.globalAlpha = clamp(layer.opacity ?? 1, 0, 1); ctx.font = `${layer.italic ? 'italic ' : ''}${Number(layer.weight || 400)} ${size}px ${font}`; ctx.textBaseline = 'top';
     if (layer.shadow?.enabled) { ctx.shadowColor = layer.shadow.color || '#000000'; ctx.shadowBlur = Number(layer.shadow.blur || 12) * scale; ctx.shadowOffsetX = Number(layer.shadow.x || 0) * scale; ctx.shadowOffsetY = Number(layer.shadow.y || 4) * scale; }
     const lines = wrapText(ctx, text, width, spacing); let py = y;
@@ -444,7 +521,7 @@
     if (!item) { item = mainDoc.createElement('div'); item.id = 'bc-menu-entry'; item.className = 'list-group-item flex-container flexGap5 interactable'; item.tabIndex = 0; item.innerHTML = '<div class="fa-fw fa-solid fa-wand-magic-sparkles extensionsMenuExtensionButton"></div><span>落句排版室</span>'; menu.appendChild(item); }
     item.onclick = openFromMenu; item.dataset.bcGen = RUN_ID; return true;
   }
-  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); mainDoc.removeEventListener('selectionchange', captureSelection); closePanel(); ['bc-menu-entry', 'bc-imgpop'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
+  function cleanup() { entryObserver?.disconnect(); clearInterval(entryTimer); clearTimeout(saveTimer); mainDoc.removeEventListener('selectionchange', captureSelection); closePanel(); ['bc-menu-entry', 'bc-imgpop', 'bc-selection-action'].forEach(id => $id(id)?.remove()); try { delete mainWin.__birdclipStudioCleanup; } catch (e) {} }
   function install() { mainDoc.addEventListener('selectionchange', captureSelection); captureSelection(); ensureMenuEntry(); entryObserver = new MutationObserver(() => ensureMenuEntry()); entryObserver.observe(mainDoc.body, { childList: true, subtree: true }); entryTimer = setInterval(ensureMenuEntry, 1200); toast(`${SCRIPT_NAME} v${VERSION} 已加载`, 'success'); }
   mainWin.__birdclipStudioCleanup = cleanup; setTimeout(install, 700);
 })();
